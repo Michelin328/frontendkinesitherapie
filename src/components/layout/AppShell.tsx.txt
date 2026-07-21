@@ -1,0 +1,32 @@
+import Sidebar from './Sidebar'
+import TopBar from './TopBar'
+
+interface AppShellProps {
+  children: React.ReactNode
+  searchPlaceholder?: string
+  showSearch?: boolean
+  topBarActions?: React.ReactNode
+}
+
+export default function AppShell({
+  children,
+  searchPlaceholder,
+  showSearch = true,
+  topBarActions,
+}: AppShellProps) {
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+        <TopBar
+          searchPlaceholder={searchPlaceholder}
+          showSearch={showSearch}
+          actions={topBarActions}
+        />
+        <main className="flex-1 p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}

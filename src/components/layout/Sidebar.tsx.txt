@@ -1,0 +1,67 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import Image from 'next/image'
+import { hrtime } from 'process'
+
+const navItems = [
+  { href: '/', icon: 'dashboard', label: 'Tableau de bord' },
+  { href: '/patients', icon: 'group', label: 'Patients' },
+  { href: '/calendrier', icon: 'calendar_today', label: 'Calendrier' },
+  { href: '/archives', icon: 'inventory_2', label: 'Archives' },
+  { href: '/parametres', icon: 'settings', label: 'Paramètres' }
+]
+
+export default function Sidebar() {
+  const pathname = usePathname()
+
+  return (
+    <aside className="fixed left-0 top-0 h-full w-64 border-r border-slate-200 bg-white shadow-sm flex flex-col z-50">
+      {/* Logo */}
+      <div className="p-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+          <span className="material-symbols-outlined text-white text-xl">clinical_notes</span>
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-primary font-manrope leading-tight">CHU Andrainjato</h1>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Clinical Management</p>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="mt-4 flex-1 px-2 space-y-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive ? 'nav-link-active' : 'nav-link'}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* User profile */}
+      <div className="px-4 pb-6">
+        <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50">
+          <Image
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi8Z9uNtiRuoXITO0JsvB5axz7F3IITVvHD7mcNXI1PbBkjfG30Kzx2LiqT-6exBpHbG3PYZb2435e-R8lGxodUl6UOClQ2BIexEovf4vQaNJrFsB-r-YPctWPy2_4XLlj_YCt6qXABV7k9wrZgGfPcOpjXQ5yK9koG5eK9bpBEErMhn3fBHN4jYi7--X2Y1HUJnE7QEIJznxIKtLsEB7TtjCUQzPsXDBPvkN4sGKRzIwikd7xARSQSB_kfooNhGHiLn9_orrARx8"
+            alt="Dr. Elena Vance"
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div className="overflow-hidden">
+            <p className="text-sm font-semibold font-manrope truncate">Dr. Elena Vance</p>
+            <p className="text-xs text-on-surface-variant">Chef de service</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}

@@ -1,0 +1,245 @@
+import AppShell from '@/components/layout/AppShell'
+import Image from 'next/image'
+import Link from 'next/link'
+
+const exercises = [
+  {
+    id: 1,
+    name: 'Quad Sets (Contraction quadriceps)',
+    detail: '3 Séries x 10 Répétitions • Quotidien',
+    progress: 85,
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBgpl8NcInkCyACOY7T88eSQnrvbjCTGyXoAemaU1_0ymHpvZUnshStj9IJDHd5KeD1eNlolcFLITSW9pZtFRDaULwYUkNy5iD0BPGw4onICZu68dw2HqBZ1PE_imIicb8UAIfX_2YWjfAH7HnDAuBzN1xYwlk4swMRY9s2uR2E2ISgb-CRk34s_kwLthZaS75PYQcqH2YDl9cQ7SDwgD2UPH9KS0F6SW3kk1tNkzUNmOJQmgALEWDXC4bg0jXLQfo9Dc8ZUM_agWo',
+  },
+  {
+    id: 2,
+    name: 'Heel Slides (Glissements de talon)',
+    detail: '2 Séries x 15 Répétitions • Matin & Soir',
+    progress: 60,
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBydQ34Cgg3709XMzy55IYe8x9hw1JIffubzgmYlhUAKw8fyctWYOoKx4X0VPMUeswjyFqszqk6H21OtDvA70AoyTV0GmZy-b7sFkMvvnXqL4G1sXbl36-144vn77XXcCqfypPPC9QBQj3A9Lyzs8fov7i5tyihzmc1ErrgTQs-Orc2q8kd7UnAtpt0_GEMDLeXRRAXcsc9v0RGXcgJmkAkjRLdP8F2RjTat_aDg0DvBaD1ZE6tEKmekR5M2ACJYoCKLcufUmZOcp8',
+  },
+  {
+    id: 3,
+    name: 'Standing Calf Stretch',
+    detail: '30 Secondes x 3 • 3 fois par jour',
+    progress: 100,
+    progressLabel: 'Terminé',
+    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPLHaZkVKuU1YY4lnG0RS5IQgxYh0BAL7K02JU9TeECDYOTsM6aiWFzKkt2VG8w1wnkS47Wa-o_iCw-qnXB4JjyfMCx541o2EHEugUUKVEBTFhDEv8LdlfgjBs1E-TWR5jWFMSvwoBmG5h9jnaJDT_0qhqNMfiCK9W2vgf_aaXESCXS301uooi7BQRPYqVr8A1P3DTHNn32jbs_aRI6fIXynH_EqDs3zJxia1WMmp2IqfnJGDuQilQ-vkJTjgMCQOToAWAX6BKjIU',
+  },
+]
+
+export default function PatientDetailPage() {
+  return (
+    <AppShell searchPlaceholder="Rechercher un patient...">
+      {/* Breadcrumb */}
+      <div className="mb-6 flex items-center gap-2 text-sm text-on-surface-variant">
+        <Link href="/patients" className="hover:text-primary transition-colors">Patients</Link>
+        <span className="material-symbols-outlined text-base">chevron_right</span>
+        <span className="text-on-surface font-semibold">Sarah Jenkins</span>
+      </div>
+
+      {/* Page Header */}
+      <div className="mb-8 flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <Image
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyMeGqPwbRXGJ-DRPtgL0Q5W3BjwxtDOEA8_DIFIoiG9o34EshHkYODTbtiil22iIqYWfgcutduXeUfMhKTgLY2cmAIcnsTsQ5LEECprv806famW4AVYApVBneD-Zmc1M10W9EMen0yLaDtiCNYFDMnDSgXuWZNMqvNZiHg4PD_pbkMqB0nbqlpPmd0wWH9WgKfKfKzrvk0ZlX_ifH3WVTRJFaWPx6v3W1v-H93oNIp3iuDY8tY_Y6ewuFuz-eg8WtIr2fPSM4rbk"
+            alt="Sarah Jenkins"
+            width={56}
+            height={56}
+            className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+          />
+          <div>
+            <h2 className="font-headline-md text-headline-md text-on-surface">Sarah Jenkins</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-slate-500">ID: #PT-84221</span>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                Suivi Post-opératoire
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+            <span className="material-symbols-outlined text-base">edit</span>
+            Modifier
+          </button>
+          <button className="btn-primary">
+            <span className="material-symbols-outlined text-base">add_circle</span>
+            Nouveau Compte Rendu
+          </button>
+        </div>
+      </div>
+
+      {/* 2 col layout */}
+      <div className="grid grid-cols-12 gap-8">
+
+        {/* Left – Exercises */}
+        <div className="col-span-12 lg:col-span-8 space-y-6">
+
+          {/* Medical Summary */}
+          <div className="card p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              {[
+                { label: 'Diagnostic', value: 'LCA — Genou Gauche', icon: 'diagnosis' },
+                { label: 'Date Chirurgie', value: '12 Avril 2024', icon: 'event' },
+                { label: 'Sessions', value: '18 / 24', icon: 'repeat' },
+                { label: 'Progression', value: '65%', icon: 'trending_up', highlight: true },
+              ].map((item) => (
+                <div key={item.label} className="text-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${item.highlight ? 'bg-teal-50 text-teal-600' : 'bg-primary/10 text-primary'}`}>
+                    <span className="material-symbols-outlined text-base">{item.icon}</span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant">{item.label}</p>
+                  <p className={`text-sm font-bold mt-0.5 ${item.highlight ? 'text-teal-600' : 'text-on-surface'}`}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Exercises */}
+          <div className="card overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <h3 className="font-title-sm text-on-surface">Programme d&apos;Exercices</h3>
+              <button className="text-primary font-semibold text-sm flex items-center gap-1 hover:underline">
+                <span className="material-symbols-outlined text-sm">add</span>
+                Ajouter un exercice
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              {exercises.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="flex items-center p-4 bg-surface-container-low rounded-lg border border-slate-100 hover:border-teal-200 transition-colors"
+                >
+                  <div className="w-12 h-12 bg-white rounded-md overflow-hidden border border-slate-200 flex-shrink-0">
+                    <Image src={ex.img} alt={ex.name} width={48} height={48} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="ml-4 flex-1 min-w-0">
+                    <h4 className="font-bold text-on-surface text-sm truncate">{ex.name}</h4>
+                    <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{ex.detail}</p>
+                  </div>
+                  <div className="flex items-center gap-4 ml-4">
+                    <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="bg-teal-500 h-full rounded-full"
+                        style={{ width: `${ex.progress}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-teal-600 w-12 text-right">
+                      {ex.progressLabel ?? `${ex.progress}%`}
+                    </span>
+                    <button className="text-slate-400 hover:text-error transition-colors">
+                      <span className="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Practitioner Notes */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-tertiary">event_note</span>
+              <h3 className="font-title-sm text-on-surface">Notes du Praticien</h3>
+            </div>
+            <blockquote className="italic text-sm text-on-surface-variant leading-relaxed border-l-4 border-tertiary-fixed pl-4">
+              &ldquo;Alerte : légère douleur signalée lors de l&apos;extension complète. Réduire l&apos;amplitude de
+              5% pour la prochaine séance. Bonne mobilité globale.&rdquo;
+            </blockquote>
+          </div>
+        </div>
+
+        {/* Right – Progress Charts */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+
+          {/* Knee Flexion */}
+          <div className="card p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-label-caps text-slate-500 uppercase">Flexion du Genou</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-display-lg font-display-lg text-primary">110°</span>
+                  <span className="text-teal-600 text-sm font-bold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-sm">trending_up</span>+15°
+                  </span>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600">
+                <span className="material-symbols-outlined">architecture</span>
+              </div>
+            </div>
+            {/* Bar sparkline */}
+            <div className="h-24 w-full flex items-end gap-1 px-1">
+              {[40, 55, 65, 80, 95, 100].map((h, i) => (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-t ${i < 3 ? 'bg-teal-100' : i < 4 ? 'bg-teal-200' : i < 5 ? 'bg-teal-300' : 'bg-primary-container'}`}
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-2">
+              {['S1', 'S2', 'S3', 'S4', 'S5', 'S6'].map((s) => <span key={s}>{s}</span>)}
+            </div>
+            <p className="text-xs text-slate-500 mt-4 italic">Objectif final : 135° (Amplitudes complètes)</p>
+          </div>
+
+          {/* Pain Score */}
+          <div className="card p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-label-caps text-slate-500 uppercase">Score de Douleur (EVA)</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-display-lg font-display-lg text-primary">2/10</span>
+                  <span className="text-teal-600 text-sm font-bold flex items-center gap-0.5">
+                    <span className="material-symbols-outlined text-sm">trending_down</span>-3
+                  </span>
+                </div>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
+                <span className="material-symbols-outlined">vital_signs</span>
+              </div>
+            </div>
+            <div className="h-24 w-full relative">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                <path
+                  d="M0,80 Q25,70 50,40 T100,20"
+                  fill="none"
+                  stroke="#005F73"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+                <circle cx="100" cy="20" r="4" fill="#005F73" />
+              </svg>
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-2">
+              <span>1er Jour</span><span>Aujourd&apos;hui</span>
+            </div>
+            <div className="mt-4 flex gap-1">
+              <div className="flex-1 h-1 bg-green-500 rounded-full" />
+              <div className="flex-1 h-1 bg-green-500 rounded-full" />
+              <div className="flex-1 h-1 bg-slate-200 rounded-full" />
+              <div className="flex-1 h-1 bg-slate-200 rounded-full" />
+              <div className="flex-1 h-1 bg-slate-200 rounded-full" />
+            </div>
+          </div>
+
+          {/* Next Appointment */}
+          <div className="bg-primary-container rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <h4 className="font-bold text-lg mb-2">Prochain Rendez-vous</h4>
+              <p className="text-primary-fixed text-sm mb-4">Mardi 24 Octobre à 14:30</p>
+              <button className="w-full bg-white text-primary font-bold py-3 rounded-lg hover:bg-slate-50 transition-colors shadow-md text-sm">
+                Replanifier la séance
+              </button>
+            </div>
+            <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl text-white/10 rotate-12">
+              event_available
+            </span>
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  )
+}

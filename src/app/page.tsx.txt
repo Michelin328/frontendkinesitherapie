@@ -1,0 +1,153 @@
+import AppShell from '@/components/layout/AppShell'
+import Image from 'next/image'
+import Link from 'next/link'
+
+const appointments = [
+  {
+    id: 1,
+    time: '09:00',
+    period: 'AM',
+    name: 'Sarah Jenkins',
+    detail: 'Suivi Post-opératoire • Genou',
+    status: 'CONFIRMÉ',
+    statusClass: 'bg-emerald-50 text-emerald-700',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyMeGqPwbRXGJ-DRPtgL0Q5W3BjwxtDOEA8_DIFIoiG9o34EshHkYODTbtiil22iIqYWfgcutduXeUfMhKTgLY2cmAIcnsTsQ5LEECprv806famW4AVYApVBneD-Zmc1M10W9EMen0yLaDtiCNYFDMnDSgXuWZNMqvNZiHg4PD_pbkMqB0nbqlpPmd0wWH9WgKfKfKzrvk0ZlX_ifH3WVTRJFaWPx6v3W1v-H93oNIp3iuDY8tY_Y6ewuFuz-eg8WtIr2fPSM4rbk',
+  },
+  {
+    id: 2,
+    time: '10:30',
+    period: 'AM',
+    name: 'Michael Chen',
+    detail: 'Consultation Initial • Dos',
+    status: 'EN ATTENTE',
+    statusClass: 'bg-blue-50 text-blue-700',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGtaVYzXyEBfLWuvIQihI2lh2Wy1IW2ERqlcH3a0hmVYWU1DqxusJB1fRMx-ztbYu2WyQAMi7mvrV8sU3no-cl0mRBYFNmdsLfDGU3s0Yqji_fWKDoKX6LUSCrO52bFUxsD2y4PEBAqNucJpsWJ_LzX44bMVwVZqAvytfI52GdLUHfUuZNsjUK13IzWky2gd90I0TE-oHkG00ejh6WVaARiZ65r2ZQJhXZQKRg8A8gGazZHxtfghn3DzmbHL_D-hZF6kKZul4Z71o',
+  },
+  {
+    id: 3,
+    time: '02:15',
+    period: 'PM',
+    name: 'Elena Rodriguez',
+    detail: 'Rééducation • Épaule',
+    status: 'EN COURS',
+    statusClass: 'bg-primary-container/10 text-primary-container',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtJIBGxgnN_n1Jf0S10r_R6-7zyLx2H2ivoL-LbkgYz3v6fCkj3DOXwaXP4i2j64OtLmfdrvRFwYuhI1gVKqKwsgEHd88xHtBNBkBoELGmiDIeGExdPCpPult7W9_Lqq-kHKvonIfELNOjwMpRawnVDfbSjliU2IpOUADyE5Iy7xa3IVJwEi-V9ztAuQzn0wUxOu76GniSwdbSXc_rjIgE7IQkq6h7LGC7nlnTdyqkpyfCNgdYpPviG6lSO_7j3YLLBPwfqTtja4o',
+  },
+]
+
+const therapies = [
+  { name: 'Physiothérapie', pct: 45, colorClass: 'bg-primary', textClass: 'text-primary' },
+  { name: 'Récupération', pct: 30, colorClass: 'bg-secondary', textClass: 'text-secondary' },
+  { name: 'Massage Thérapeutique', pct: 25, colorClass: 'bg-tertiary-container', textClass: 'text-tertiary-container' },
+]
+
+const notes = [
+  'Vérifier les stocks de gels de contact.',
+  'Réunion d\'équipe à 16h30 en salle B.',
+]
+
+export default function DashboardPage() {
+  return (
+    <AppShell searchPlaceholder="Rechercher un patient...">
+      {/* Header */}
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface">Bonjour, Dr. Vance</h2>
+          <p className="font-body-lg text-on-surface-variant">Voici l&apos;aperçu de votre activité pour aujourd&apos;hui.</p>
+        </div>
+      </div>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* Appointments List — 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="card overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h4 className="font-title-sm text-on-surface">Rendez-vous du jour</h4>
+              <Link href="/calendrier" className="text-primary-container font-semibold text-sm hover:underline">
+                Voir tout
+              </Link>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {appointments.map((appt) => (
+                <div
+                  key={appt.id}
+                  className="px-6 py-5 flex items-center gap-4 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="text-center min-w-[60px]">
+                    <p className="text-label-caps text-primary-container">{appt.time}</p>
+                    <p className="text-xs text-on-surface-variant">{appt.period}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={appt.avatar}
+                      alt={appt.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-on-surface">{appt.name}</p>
+                    <p className="text-body-md text-on-surface-variant">{appt.detail}</p>
+                  </div>
+                  <span className={`status-badge ${appt.statusClass}`}>{appt.status}</span>
+                  <button className="text-slate-400 hover:text-primary">
+                    <span className="material-symbols-outlined">more_vert</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Therapy Distribution */}
+          <div className="card p-6">
+            <h4 className="font-title-sm text-on-surface mb-6">Répartition des Thérapies</h4>
+            <div className="space-y-6">
+              {therapies.map((t) => (
+                <div key={t.name}>
+                  <div className="flex justify-between items-end mb-2">
+                    <p className="font-semibold text-sm">{t.name}</p>
+                    <p className={`text-xs font-bold ${t.textClass}`}>{t.pct}%</p>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full">
+                    <div className={`h-full ${t.colorClass} rounded-full transition-all`} style={{ width: `${t.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+              <p className="text-xs text-on-surface-variant text-center">
+                Basé sur 284 sessions enregistrées cette semaine.
+              </p>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="bg-secondary-container/20 p-6 rounded-xl border border-secondary-container/50">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-on-secondary-container">lightbulb</span>
+              <h4 className="font-title-sm text-on-secondary-container">Notes du Service</h4>
+            </div>
+            <ul className="space-y-3 text-sm text-on-secondary-container/80">
+              {notes.map((note, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="material-symbols-outlined text-[18px] mt-0.5">check_circle</span>
+                  {note}
+                </li>
+              ))}
+            </ul>
+            <button className="mt-6 w-full btn-primary">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Ajouter une note
+            </button>
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  )
+}

@@ -1,0 +1,47 @@
+'use client'
+
+interface TopBarProps {
+  title?: string
+  searchPlaceholder?: string
+  showSearch?: boolean
+  actions?: React.ReactNode
+}
+
+export default function TopBar({
+  searchPlaceholder = 'Rechercher...',
+  showSearch = true,
+  actions,
+}: TopBarProps) {
+  return (
+    <header className="sticky top-0 z-40 w-full h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex justify-between items-center">
+      {showSearch && (
+        <div className="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-full w-96">
+          <span className="material-symbols-outlined text-slate-400 text-base">search</span>
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            className="bg-transparent border-none focus:outline-none focus:ring-0 text-sm w-full text-on-surface placeholder-slate-400"
+          />
+        </div>
+      )}
+      {!showSearch && <div />}
+
+      <div className="flex items-center gap-6">
+        {actions}
+        <button className="relative text-slate-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined">notifications</span>
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full" />
+        </button>
+        <button className="text-slate-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined">help_outline</span>
+        </button>
+        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+          <div className="text-right">
+            <p className="text-sm font-bold text-on-surface leading-none font-manrope">Dr. Elena Vance</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider mt-1">Chef de service</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}

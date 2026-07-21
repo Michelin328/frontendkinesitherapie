@@ -1,0 +1,218 @@
+import AppShell from '@/components/layout/AppShell'
+import Link from 'next/link'
+import Image from 'next/image'
+import StatusBadge from '@/components/ui/StatusBadge'
+
+const filters = ['Tous']
+
+const patients = [
+  {
+    id: 'PT-84221',
+    name: 'Sarah Jenkins',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyMeGqPwbRXGJ-DRPtgL0Q5W3BjwxtDOEA8_DIFIoiG9o34EshHkYODTbtiil22iIqYWfgcutduXeUfMhKTgLY2cmAIcnsTsQ5LEECprv806famW4AVYApVBneD-Zmc1M10W9EMen0yLaDtiCNYFDMnDSgXuWZNMqvNZiHg4PD_pbkMqB0nbqlpPmd0wWH9WgKfKfKzrvk0ZlX_ifH3WVTRJFaWPx6v3W1v-H93oNIp3iuDY8tY_Y6ewuFuz-eg8WtIr2fPSM4rbk',
+    nextAppt: '13 Nov 2023, 09:00',
+    type: 'Physiothérapie',
+    typeCls: 'bg-primary/10 text-primary border-primary/20',
+    status: 'active' as const,
+    statusLabel: 'Actif',
+  },
+  {
+    id: 'PT-84225',
+    name: 'Miora Raharisoa',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPBj_IspguPiNXtBKqPifs5qLaj3lk68qF4sfTHpF_t7dFGltzOz4ZOF8_xgsuHsUh2fKS0Jy3rECvVEz5RaVlaXfftxREVCDYs862Eh9GreJ03unee9LABiW1CrDoJSmiaNyQtn2WyOr4QsqqDwa9_hAjAXRBgwNn1xrNvWE8RyiQP3ymZS9PtvB_BJRn8ZcLqaz8Z9u3V6XNQkoDb3ClTMo5JdFx3PP1zk9PskXMpCsoA6MJWifuP9ei5rG2eXQ-u1Z7SxeKaCc',
+    nextAppt: '14 Nov 2023, 14:00',
+    type: 'Rééducation',
+    typeCls: 'bg-secondary-container/10 text-on-secondary-container border-secondary-container/20',
+    status: 'pending' as const,
+    statusLabel: 'En attente',
+  },
+  {
+    id: 'PT-84229',
+    name: 'Andry Lalaina',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABNRV0KX1CqJ6jjGzcoyFejcRGfUUdVuSgW9cyQWVPIKpwJXZV58yuhcjBtdUi8vcDCUm5khawglvlPstvokzANKC9J8uhOlB8F5AOWcRAHYkPpDd3z_ktBk6pBpN59vxFjJrK1hvRZc-7lo_G-d7szd9bysgd8h1dhyF--zgoRlxhKKLPRRm8dbgr0YWNoeCSohCdCdfQvT7KKcpyvT50HZafcb8qKCaHNUqe7QlWFsCXSDztJZorpauGRU7XS_2UfOpaM2A8peE',
+    nextAppt: '16 Nov 2023, 11:15',
+    type: 'Neurologie',
+    typeCls: 'bg-tertiary-fixed/10 text-on-tertiary-fixed-variant border-tertiary-fixed/20',
+    status: 'active' as const,
+    statusLabel: 'Actif',
+  },
+  {
+    id: 'PT-84232',
+    name: 'Solange Mariat',
+    avatar: null,
+    initials: 'SM',
+    nextAppt: null,
+    type: 'Consultation Générale',
+    typeCls: 'bg-slate-100 text-slate-500 border-slate-200',
+    status: 'done' as const,
+    statusLabel: 'Terminé',
+  },
+]
+
+export default function PatientsPage() {
+  return (
+    <AppShell searchPlaceholder="Rechercher un patient...">
+      {/* Page Header */}
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface">Gestion des Patients</h2>
+          <p className="text-on-surface-variant text-sm mt-1">1 284 patients enregistrés au total</p>
+        </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+            <span className="material-symbols-outlined text-base">filter_list</span>
+            Filtrer
+          </button>
+          <button className="btn-primary">
+            <span className="material-symbols-outlined text-base">person_add</span>
+            Nouveau Patient
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+        {filters.map((f, i) => (
+          <button
+            key={f}
+            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
+              i === 0
+                ? 'bg-primary text-white'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* Patients Table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/50">
+                <th className="p-6 text-left text-label-caps text-on-surface-variant font-label-caps uppercase">
+                  Patient
+                </th>
+                <th className="p-6 text-left text-label-caps text-on-surface-variant font-label-caps uppercase">
+                  Prochain RDV
+                </th>
+                <th className="p-6 text-left text-label-caps text-on-surface-variant font-label-caps uppercase">
+                  Type
+                </th>
+                <th className="p-6 text-left text-label-caps text-on-surface-variant font-label-caps uppercase">
+                  Statut
+                </th>
+                <th className="p-6 text-right text-label-caps text-on-surface-variant font-label-caps uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {patients.map((p) => (
+                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
+                  {/* Patient */}
+                  <td className="p-6">
+                    <div className="flex items-center gap-3">
+                      {p.avatar ? (
+                        <Image
+                          src={p.avatar}
+                          alt={p.name}
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">
+                          {p.initials}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold text-on-surface">{p.name}</p>
+                        <p className="text-[11px] text-slate-400">ID: #{p.id}</p>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Next appointment */}
+                  <td className="p-6">
+                    {p.nextAppt ? (
+                      <div className="flex items-center gap-2 text-on-surface">
+                        <span className="material-symbols-outlined text-[18px] text-primary">event</span>
+                        <span className="font-semibold text-sm">{p.nextAppt}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <span className="material-symbols-outlined text-[18px]">event_busy</span>
+                        <span className="text-sm">Pas de RDV</span>
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Type */}
+                  <td className="p-6">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${p.typeCls}`}>
+                      {p.type}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="p-6">
+                    <StatusBadge variant={p.status} label={p.statusLabel} showDot />
+                  </td>
+
+                  {/* Actions */}
+                  <td className="p-6 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/patients/${p.id.toLowerCase()}`}
+                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+                      >
+                        <span className="material-symbols-outlined text-base">visibility</span>
+                      </Link>
+                      <button className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all">
+                        <span className="material-symbols-outlined text-base">edit</span>
+                      </button>
+                      <button className="p-2 text-slate-400 hover:text-error hover:bg-error/5 rounded-lg transition-all">
+                        <span className="material-symbols-outlined text-base">more_vert</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="p-6 border-t border-slate-100 flex justify-between items-center bg-slate-50/10">
+          <p className="text-xs text-slate-400">
+            Affichage de <span className="font-bold text-slate-600">4</span> sur{' '}
+            <span className="font-bold text-slate-600">1 284</span> patients
+          </p>
+          <div className="flex gap-2">
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-white transition-colors cursor-not-allowed">
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            {[1, 2, 3].map((page) => (
+              <button
+                key={page}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                  page === 1
+                    ? 'bg-primary text-white'
+                    : 'border border-slate-200 text-slate-600 hover:bg-white'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-white transition-colors">
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  )
+}
