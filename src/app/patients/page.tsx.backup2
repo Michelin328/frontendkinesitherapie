@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import { useLanguage } from '@/context/LanguageContext'
 
@@ -10,8 +9,6 @@ interface Patient {
   id: number; numeroDossier: string; nom: string; prenom: string
   dateNaissance: string; sexe: string; diagnostic: string
   statut: string; dateAdmission: string; dateDerniereVisite: string
-  urgence?: string; alertes?: string; objectifs?: string
-  remarques?: string; nomMedecinPrescripteur?: string; antecedents?: string
 }
 
 interface RendezVous {
@@ -23,9 +20,6 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 export default function PatientsPage() {
   const { t } = useLanguage()
-  const router = useRouter()
-  const [confirmAnnulerRdv, setConfirmAnnulerRdv] = useState<RendezVous | null>(null)
-  const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [search, setSearch] = useState('')
@@ -49,7 +43,7 @@ export default function PatientsPage() {
   // Rendez-vous actif (non annulé) le plus proche pour un patient donné.
   function rdvDuPatient(patientId: number): RendezVous | undefined {
     return rdvs
-      .filter(r => r.patientId === patientId)
+      .filter(r => r.patientId === patientId && r.statut !== 'annule')
       .sort((a, b) =>
         (a.date + (a.heureDebut || '')).localeCompare(b.date + (b.heureDebut || '')),
       )[0]
@@ -81,16 +75,9 @@ export default function PatientsPage() {
 
   function commencer(rdv: RendezVous) {
     majRdv(rdv.id, { statut: 'en_cours' })
-    router.push('/patients/' + rdv.patientId)
   }
   function annuler(rdv: RendezVous) {
-    setConfirmAnnulerRdv(rdv)
-    setMenuOpen(null)
-  }
-  function confirmerAnnulation() {
-    if (!confirmAnnulerRdv) return
-    majRdv(confirmAnnulerRdv.id, { statut: 'annule' })
-    setConfirmAnnulerRdv(null)
+    majRdv(rdv.id, { statut: 'annule' })
   }
   function ouvrirDecaler(rdv: RendezVous) {
     setDecalerRdv(rdv)
@@ -139,9 +126,8 @@ export default function PatientsPage() {
             <thead>
               <tr className="border-b border-outline-variant bg-surface-container-low/50">
                 <th className="table-header">{t('pat_colPatient')}</th>
-                <th className="table-header">Diagnostic</th>
-                <th className="table-header text-center">Détails</th>
-                <th className="table-header">Dernière visite</th>
+                <th className="table-header">{t('pat_colDiagnostic')}</th>
+                <th className="table-header">Rendez-vous</th>
                 <th className="table-header text-center">Action</th>
               </tr>
             </thead>
@@ -151,62 +137,55 @@ export default function PatientsPage() {
                 return (
                   <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
                     <td className="table-cell">
-                      <div>
+                      <Link href={'/patients/' + p.id} className="hover:underline">
                         <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
                         <p className="text-xs text-on-surface-variant">
                           {p.dateNaissance} {p.sexe ? '- ' + (p.sexe === 'M' ? t('cal_homme') : t('cal_femme')) : ''}
                         </p>
-                      </div>
+                      </Link>
                     </td>
                     <td className="table-cell">
                       <p className="text-sm text-on-surface max-w-[220px] truncate">{p.diagnostic || '-'}</p>
                     </td>
-                    <td className="table-cell text-center">
-                      <button onClick={() => setDetailsPatient(p)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
-                        Détails
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                      </button>
-                    </td>
                     <td className="table-cell text-xs">
-                      <span className="text-on-surface-variant">
-                        {p.dateDerniereVisite || '-'}
-                      </span>
+                      {rdv ? (
+                        <span className="text-on-surface-variant">
+                          {rdv.date} · {(rdv.heureDebut || '').slice(0, 5)}
+                          {rdv.statut === 'en_cours' && <span className="ml-2 text-emerald-600 font-semibold">en cours</span>}
+                        </span>
+                      ) : (
+                        <span className="text-on-surface-variant">-</span>
+                      )}
                     </td>
                     <td className="table-cell text-center relative">
                       <button
                         onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
+                        disabled={!rdv}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Action
                         <span className="material-symbols-outlined text-sm">expand_more</span>
                       </button>
 
-                      {menuOpen === p.id && (
+                      {menuOpen === p.id && rdv && (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
                           <div className="absolute right-4 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
-                            {rdv ? (
-                              <>
-                                <button onClick={() => commencer(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base text-emerald-600">play_circle</span>
-                                  Commencer
-                                </button>
-                                <button onClick={() => ouvrirDecaler(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
-                                  Décaler le rendez-vous
-                                </button>
-                                <button onClick={() => annuler(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base">cancel</span>
-                                  Annuler
-                                </button>
-                              </>
-                            ) : (
-                              <p className="px-4 py-3 text-xs text-on-surface-variant italic">Aucun rendez-vous actif</p>
-                            )}
+                            <button onClick={() => commencer(rdv)}
+                              className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
+                              <span className="material-symbols-outlined text-base text-emerald-600">play_circle</span>
+                              Commencer
+                            </button>
+                            <button onClick={() => ouvrirDecaler(rdv)}
+                              className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
+                              <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
+                              Décaler le rendez-vous
+                            </button>
+                            <button onClick={() => annuler(rdv)}
+                              className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                              <span className="material-symbols-outlined text-base">cancel</span>
+                              Annuler
+                            </button>
                           </div>
                         </>
                       )}
@@ -260,74 +239,6 @@ export default function PatientsPage() {
                 className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm">
                 Confirmer
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODALE CONFIRMATION ANNULATION */}
-      {confirmAnnulerRdv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-red-500 text-3xl">cancel</span>
-            </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">Confirmer l'annulation</h3>
-            <p className="text-sm text-on-surface-variant mb-6">Voulez-vous vraiment annuler ce rendez-vous ? Cette action indiquera que le patient n'est pas venu.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmAnnulerRdv(null)}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low">
-                Retour
-              </button>
-              <button onClick={confirmerAnnulation}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 shadow-sm">
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODALE DETAILS PRESCRIPTION */}
-      {detailsPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-500">description</span>
-                Détails de la prescription
-              </h3>
-              <button onClick={() => setDetailsPatient(null)} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Urgence</p>
-                <p className="text-sm text-on-surface">{detailsPatient.urgence || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Alertes</p>
-                <p className="text-sm text-on-surface">{detailsPatient.alertes || 'Aucune'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Renseignements</p>
-                <p className="text-sm text-on-surface">{detailsPatient.antecedents || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Diagnostic</p>
-                <p className="text-sm text-on-surface">{detailsPatient.diagnostic || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Objectifs</p>
-                <p className="text-sm text-on-surface">{detailsPatient.objectifs || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Remarques</p>
-                <p className="text-sm text-on-surface">{detailsPatient.remarques || 'Aucune'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Médecin prescripteur</p>
-                <p className="text-sm text-on-surface">{detailsPatient.nomMedecinPrescripteur || 'Non renseigné'}</p>
-              </div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 
 const API = process.env.NEXT_PUBLIC_API_URL
@@ -14,13 +15,20 @@ interface Patient {
   dateDerniereVisite: string; antecedents: string
 }
 interface SeanceHistorique {
-  date: string; heureDebut: string; heureFin: string
+  date: string; heure: string
   traitement: string; evolution: string; conseil: string
 }
 
-function getHeureActuelle() {
-  const now = new Date()
-  return String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0')
+const MOCK_PATIENTS: Record<number, Patient> = {
+  1:   { id: 1,   numeroDossier: 'P-2024-001', nom: 'Rakoto', prenom: 'Jean', dateNaissance: '1985-03-12', sexe: 'M', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 01', diagnostic: 'Rupture LCA genou droit', statut: 'actif', dateAdmission: '2024-04-12', dateDerniereVisite: '2024-06-08', antecedents: 'Aucun antecedent' },
+  2:   { id: 2,   numeroDossier: 'P-2024-002', nom: 'Rabe', prenom: 'Marie', dateNaissance: '1992-07-23', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 02', diagnostic: 'Tendinite calcifiante epaule droite', statut: 'actif', dateAdmission: '2024-04-18', dateDerniereVisite: '2024-06-05', antecedents: 'Aucun antecedent' },
+  3:   { id: 3,   numeroDossier: 'P-2024-003', nom: 'Andria', prenom: 'Paul', dateNaissance: '1978-11-08', sexe: 'M', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 03', diagnostic: 'Entorse cheville gauche grade 2', statut: 'actif', dateAdmission: '2024-04-22', dateDerniereVisite: '2024-06-09', antecedents: 'Aucun antecedent' },
+  4:   { id: 4,   numeroDossier: 'P-2024-004', nom: 'Rasoa', prenom: 'Lala', dateNaissance: '1965-05-30', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 04', diagnostic: 'Arthrose lombaire chronique', statut: 'actif', dateAdmission: '2024-05-02', dateDerniereVisite: '', antecedents: 'Aucun antecedent' },
+  5:   { id: 5,   numeroDossier: 'P-2024-005', nom: 'Rakotonirina', prenom: 'Zo', dateNaissance: '2001-09-15', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 05', diagnostic: 'Scoliose thoracique', statut: 'inactif', dateAdmission: '2024-03-10', dateDerniereVisite: '2024-05-28', antecedents: 'Aucun antecedent' },
+  6:   { id: 6,   numeroDossier: 'P-2024-006', nom: 'Randriamihaingo', prenom: 'Tiana', dateNaissance: '1988-02-20', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 000 06', diagnostic: 'Paralysie faciale peripherique droite', statut: 'en_attente', dateAdmission: '2024-06-08', dateDerniereVisite: '', antecedents: 'Aucun antecedent' },
+  101: { id: 101, numeroDossier: 'P-2024-101', nom: 'Jenkins', prenom: 'Sarah', dateNaissance: '1990-05-14', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 001 01', diagnostic: 'Suivi Post-operatoire Genou', statut: 'actif', dateAdmission: '2024-03-01', dateDerniereVisite: '2024-06-10', antecedents: 'Operation genou droit mars 2024' },
+  102: { id: 102, numeroDossier: 'P-2024-102', nom: 'Chen', prenom: 'Michael', dateNaissance: '1983-11-22', sexe: 'M', adresse: 'Fianarantsoa', telephone: '+261 34 00 001 02', diagnostic: 'Consultation Initial Dos', statut: 'en_attente', dateAdmission: '2024-06-09', dateDerniereVisite: '', antecedents: 'Douleurs lombaires chroniques' },
+  103: { id: 103, numeroDossier: 'P-2024-103', nom: 'Rodriguez', prenom: 'Elena', dateNaissance: '1981-03-08', sexe: 'F', adresse: 'Fianarantsoa', telephone: '+261 34 00 001 03', diagnostic: 'Reeducation Epaule', statut: 'actif', dateAdmission: '2024-04-15', dateDerniereVisite: '2024-06-12', antecedents: 'Rupture partielle coiffe des rotateurs' },
 }
 
 function getNow() {
@@ -61,6 +69,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   const [valide, setValide]           = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const searchParams = useSearchParams()
+  const router = useRouter()
   const from = searchParams.get('from')
 
   const [heureDebut, setHeureDebut]     = useState('')
@@ -68,7 +77,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   const [typeRdv, setTypeRdv]           = useState('')
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [religion, setReligion]         = useState('')
-  const [showHistorique, setShowHistorique] = useState(false)
+  const [infoTab, setInfoTab]           = useState<'infos'|'historique'>('infos')
   const [modeAdmission, setModeAdmission]   = useState('')
   const [autoRefere, setAutoRefere]         = useState('')
   const [referePar, setReferePar]           = useState('')
@@ -88,60 +97,25 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   const [rdvType, setRdvType]                   = useState('')
   const [rdvConfirme, setRdvConfirme]           = useState(false)
 
-  // Chargement initial : patient (API) + brouillon local + historique + religion
   useEffect(() => {
-    fetch(API + '/patients/' + params.id)
-      .then(r => r.json())
-      .then(data => {
-        if (data?.id) {
-          setPatient(data)
-          const savedDraft = localStorage.getItem('brouillon_patient_' + params.id)
-          let draftAntecedents = null
-          if (savedDraft) { try { draftAntecedents = JSON.parse(savedDraft).antecedents } catch {} }
-          setAntecedents(draftAntecedents || data.antecedents || '')
-        }
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-
+    const numId = parseInt(params.id)
+    if (MOCK_PATIENTS[numId]) {
+      setPatient(MOCK_PATIENTS[numId])
+      setAntecedents(MOCK_PATIENTS[numId].antecedents || '')
+      setLoading(false)
+    } else {
+      fetch(API + '/patients/' + params.id)
+        .then(r => r.json())
+        .then(data => { if (data?.id) { setPatient(data); setAntecedents(data.antecedents || '') } setLoading(false) })
+        .catch(() => setLoading(false))
+    }
     const savedReligion = localStorage.getItem('religion_patient_' + params.id)
     if (savedReligion) setReligion(savedReligion)
-
     const savedHistorique = localStorage.getItem('historique_patient_' + params.id)
     if (savedHistorique) {
       try { setSeancesHistorique(JSON.parse(savedHistorique)) } catch {}
     }
-
-    const savedDraft = localStorage.getItem('brouillon_patient_' + params.id)
-    if (savedDraft) {
-      try {
-        const d = JSON.parse(savedDraft)
-        if (d.heureDebut) { setHeureDebut(d.heureDebut) } else { setHeureDebut(getHeureActuelle()) }
-        if (d.heureFin) setHeureFin(d.heureFin)
-        if (d.typeRdv) setTypeRdv(d.typeRdv)
-        if (d.objectif) setObjectif(d.objectif)
-        if (d.historieMaladie) setHistorieMaladie(d.historieMaladie)
-        if (d.bilanFonctionnel) setBilanFonctionnel(d.bilanFonctionnel)
-        if (d.bilanIncapacite) setBilanIncapacite(d.bilanIncapacite)
-        if (d.diagnosticKine) setDiagnosticKine(d.diagnosticKine)
-        if (d.traitement) setTraitement(d.traitement)
-        if (d.evolution) setEvolution(d.evolution)
-        if (d.conseil) setConseil(d.conseil)
-      } catch {}
-    } else {
-      setHeureDebut(getHeureActuelle())
-    }
   }, [params.id])
-
-  // Sauvegarde automatique de toutes les cartes a chaque modification
-  useEffect(() => {
-    const draft = {
-      heureDebut, heureFin, typeRdv, objectif, antecedents,
-      historieMaladie, bilanFonctionnel, bilanIncapacite, diagnosticKine,
-      traitement, evolution, conseil
-    }
-    localStorage.setItem('brouillon_patient_' + params.id, JSON.stringify(draft))
-  }, [heureDebut, heureFin, typeRdv, objectif, antecedents, historieMaladie, bilanFonctionnel, bilanIncapacite, diagnosticKine, traitement, evolution, conseil, params.id])
 
   function handleReligionChange(v: string) {
     setReligion(v)
@@ -156,40 +130,13 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   }
 
   function confirmerValidation() {
-    const { date } = getNow()
-    const heureFinFinale = getHeureActuelle()
-    setHeureFin(heureFinFinale)
-    const nouvelleSeance: SeanceHistorique = { date, heureDebut, heureFin: heureFinFinale, traitement, evolution, conseil }
+    const { date, heure } = getNow()
+    const nouvelleSeance: SeanceHistorique = { date, heure, traitement, evolution, conseil }
     const nouvelHistorique = [nouvelleSeance, ...seancesHistorique]
     setSeancesHistorique(nouvelHistorique)
     localStorage.setItem('historique_patient_' + params.id, JSON.stringify(nouvelHistorique))
-    setValide(true)
-    setShowConfirm(false)
-
-    const dateVisite = new Date().toISOString().slice(0, 10)
-    fetch(API + '/patients/' + params.id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dateDerniereVisite: dateVisite + ' ' + heureFinFinale }),
-    }).then(() => {
-      setPatient(prev => prev ? { ...prev, dateDerniereVisite: dateVisite + ' ' + heureFinFinale } : prev)
-    }).catch(() => {})
-
-    // Enregistrement durable de la seance validee (visible dans Archives)
-    fetch(API + '/seances', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        patientId: Number(params.id),
-        date,
-        heureDebut,
-        heureFin: heureFinFinale,
-        traitement,
-        evolution,
-        conseil,
-        kine: 'Dr. Elena Vance',
-      }),
-    }).catch(() => {})
+    setValide(true); setShowConfirm(false)
+    setTimeout(() => router.push('/rapport'), 1500)
   }
 
   if (loading) return (
@@ -217,30 +164,20 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   return (
     <AppShell searchPlaceholder="Rechercher un patient..." showSearch={false}>
       <nav className="flex items-center gap-2 text-sm text-on-surface-variant mb-6">
-        <Link href="/patients" className="hover:text-primary">Fil du travail</Link>
-        <span className="material-symbols-outlined text-sm">chevron_right</span>
-        <span className="text-on-surface font-semibold">{nomComplet}</span>
+        {from === 'archives' ? (<><Link href="/archives" className="hover:text-primary">Archives</Link><span className="material-symbols-outlined text-sm">chevron_right</span><span className="text-on-surface font-semibold">{nomComplet}</span></>) : from === 'calendrier' ? (<><Link href="/calendrier" className="hover:text-primary">Calendrier</Link><span className="material-symbols-outlined text-sm">chevron_right</span><span className="text-on-surface font-semibold">{nomComplet}</span></>) : from === 'dashboard' ? (<><Link href="/" className="hover:text-primary">Tableau de bord</Link><span className="material-symbols-outlined text-sm">chevron_right</span><span className="text-on-surface font-semibold">{nomComplet}</span></>) : (<><Link href="/patients" className="hover:text-primary">Patients</Link><span className="material-symbols-outlined text-sm">chevron_right</span><span className="text-on-surface font-semibold">{nomComplet}</span></>)}
       </nav>
 
       {valide && (
         <div className="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4">
           <span className="material-symbols-outlined text-emerald-500 text-2xl">check_circle</span>
           <div>
-            <p className="font-bold text-emerald-700">Dossier valide et enregistre dans l'historique !</p>
+            <p className="font-bold text-emerald-700">Dossier valide et transmis au rapport !</p>
+            <p className="text-xs text-emerald-600">Redirection vers le rapport en cours...</p>
           </div>
         </div>
       )}
 
-      <section className="relative bg-gradient-to-r from-teal-600 to-teal-400 rounded-2xl shadow-lg p-6 mb-6 text-white">
-        <button onClick={() => setShowHistorique(true)}
-          className="absolute -top-3 right-6 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm px-4 py-2 rounded-full shadow-lg border-2 border-white transition-all">
-          <span className="material-symbols-outlined text-base">history</span>
-          Historique
-          {seancesHistorique.length > 0 && (
-            <span className="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full">{seancesHistorique.length}</span>
-          )}
-        </button>
-
+      <section className="bg-gradient-to-r from-teal-600 to-teal-400 rounded-2xl shadow-lg p-6 mb-6 text-white">
         <div className="flex items-start gap-8">
           <div className="relative flex-shrink-0">
             <div className="w-28 h-28 rounded-xl bg-white/20 flex items-center justify-center border-2 border-white/40">
@@ -251,32 +188,66 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-3xl font-bold text-white font-manrope">{nomComplet}</h2>
-                <p className="text-teal-100 font-medium mt-1">{patient.sexe === 'M' ? 'Homme' : 'Femme'}</p>
+                <p className="text-teal-100 font-medium mt-1">ID: #{patient.numeroDossier || patient.id} - {patient.sexe === 'M' ? 'Homme' : 'Femme'}</p>
               </div>
               <span className={'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ' + (patient.statut==='actif'?'bg-emerald-400 text-white':patient.statut==='archive'?'bg-red-400 text-white':patient.statut==='en_attente'?'bg-amber-400 text-white':'bg-white/30 text-white')}>{patient.statut}</span>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5 border-t border-white/20 pt-4">
-              <div>
-                <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Date de naissance</p>
-                <p className="text-sm font-bold text-white mt-1">{patient.dateNaissance || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Religion</p>
-                {!valide ? (
-                  <input type="text" value={religion} onChange={e => handleReligionChange(e.target.value)} 
-                    className="mt-1 w-full bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white" />
-                ) : <p className="text-sm font-bold text-white mt-1">{religion || '—'}</p>}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Telephone</p>
-                <p className="text-sm font-bold text-white mt-1">{patient.telephone || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Admission</p>
-                <p className="text-sm font-bold text-white mt-1">{patient.dateAdmission || 'N/A'}</p>
-              </div>
+            <div className="flex gap-2 mt-5 border-t border-white/20 pt-4">
+              <button onClick={() => setInfoTab('infos')}
+                className={'px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 ' + (infoTab==='infos' ? 'bg-white text-teal-700' : 'bg-white/10 text-white hover:bg-white/20')}>
+                <span className="material-symbols-outlined text-sm">badge</span>Informations
+              </button>
+              <button onClick={() => setInfoTab('historique')}
+                className={'px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 ' + (infoTab==='historique' ? 'bg-white text-teal-700' : 'bg-white/10 text-white hover:bg-white/20')}>
+                <span className="material-symbols-outlined text-sm">history</span>Historique
+                {seancesHistorique.length > 0 && <span className="bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{seancesHistorique.length}</span>}
+              </button>
             </div>
+
+            {infoTab === 'infos' ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <div>
+                  <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Date de naissance</p>
+                  <p className="text-sm font-bold text-white mt-1">{patient.dateNaissance || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Religion</p>
+                  {!valide ? (
+                    <input type="text" value={religion} onChange={e => handleReligionChange(e.target.value)} placeholder="Ex: Catholique..."
+                      className="mt-1 w-full bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white" />
+                  ) : <p className="text-sm font-bold text-white mt-1">{religion || '—'}</p>}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Telephone</p>
+                  <p className="text-sm font-bold text-white mt-1">{patient.telephone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-teal-100 uppercase tracking-widest">Admission</p>
+                  <p className="text-sm font-bold text-white mt-1">{patient.dateAdmission || 'N/A'}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                {seancesHistorique.length === 0 ? (
+                  <p className="text-sm text-teal-100 italic">Aucune seance enregistree pour le moment.</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {seancesHistorique.map((s, i) => (
+                      <div key={i} className="bg-white/10 rounded-lg p-4 border border-white/20">
+                        <p className="text-xs font-bold uppercase tracking-widest text-teal-100 mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">event</span>{s.date} — {s.heure}</p>
+                        <div className="space-y-2">
+                          {s.traitement && (<div><p className="text-[11px] font-semibold text-teal-100">Traitement</p><p className="text-sm text-white">{s.traitement}</p></div>)}
+                          {s.evolution && (<div><p className="text-[11px] font-semibold text-teal-100">Evolution et suivi</p><p className="text-sm text-white">{s.evolution}</p></div>)}
+                          {s.conseil && (<div><p className="text-[11px] font-semibold text-teal-100">Conseil</p><p className="text-sm text-white">{s.conseil}</p></div>)}
+                          {!s.traitement && !s.evolution && !s.conseil && (<p className="text-sm text-teal-100 italic">Aucun contenu saisi</p>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -289,6 +260,11 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             Seance du jour
             {valide && <span className="ml-auto text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"><span className="material-symbols-outlined text-sm">lock</span>Valide</span>}
           </h3>
+          <div className="mb-4">
+            <label className="text-xs font-bold text-teal-600 uppercase tracking-widest block mb-1">Heure début</label>
+            <input type="time" value={heureDebut} onChange={e => !valide && setHeureDebut(e.target.value)} disabled={valide}
+              className={'w-full sm:w-48 px-3 py-2 rounded-lg border text-sm outline-none ' + (valide ? 'bg-teal-100/50 border-teal-200 cursor-not-allowed' : 'bg-white border-teal-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-300')} />
+          </div>
           <div>
             <label className="text-xs font-bold text-teal-600 uppercase tracking-widest block mb-2">Type de seance</label>
             {!valide ? (
@@ -354,13 +330,18 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             Fin de seance
             {valide && <span className="ml-auto text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1"><span className="material-symbols-outlined text-sm">lock</span>Valide</span>}
           </h3>
+          <div>
+            <label className="text-xs font-bold text-teal-600 uppercase tracking-widest block mb-1">Heure fin</label>
+            <input type="time" value={heureFin} onChange={e => !valide && setHeureFin(e.target.value)} disabled={valide}
+              className={'w-full sm:w-48 px-3 py-2 rounded-lg border text-sm outline-none ' + (valide ? 'bg-teal-100/50 border-teal-200 cursor-not-allowed' : 'bg-white border-teal-200 focus:border-teal-400 focus:ring-1 focus:ring-teal-300')} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {!valide ? (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center gap-3">
-              <p className="text-sm text-on-surface-variant text-center">Une fois valide, le dossier sera verrouille et ajoute a l'historique.</p>
+              <p className="text-sm text-on-surface-variant text-center">Une fois valide, le dossier sera transmis au rapport et ne pourra plus etre modifie.</p>
               <button onClick={() => setShowConfirm(true)}
                 className="flex items-center gap-2 px-8 py-3 rounded-xl bg-emerald-500 text-white font-bold text-base shadow-lg hover:bg-emerald-600 transition-all">
                 <span className="material-symbols-outlined">check_circle</span>
@@ -463,7 +444,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
               <span className="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">Confirmer la validation</h3>
-            <p className="text-sm text-on-surface-variant mb-6">Une fois valide, le dossier sera verrouille et ajoute a l'historique. Cette action est irreversible.</p>
+            <p className="text-sm text-on-surface-variant mb-6">Une fois valide, le dossier sera verrouille et transmis automatiquement au rapport. Cette action est irreversible.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)}
                 className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low">
@@ -474,41 +455,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 Confirmer
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {showHistorique && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-emerald-500">history</span>
-                Historique des seances
-              </h3>
-              <button onClick={() => setShowHistorique(false)} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            {seancesHistorique.length === 0 ? (
-              <p className="text-sm text-on-surface-variant italic">Aucune seance enregistree pour le moment.</p>
-            ) : (
-              <div className="space-y-3">
-                {seancesHistorique.map((s, i) => (
-                  <div key={i} className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                    <p className="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-2 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-sm">event</span>{s.date} — {(s.heureDebut || '?').replace(':','h')}-{(s.heureFin || '?').replace(':','h')}
-                    </p>
-                    <div className="space-y-2">
-                      {s.traitement && (<div><p className="text-[11px] font-semibold text-emerald-600">Traitement</p><p className="text-sm text-on-surface">{s.traitement}</p></div>)}
-                      {s.evolution && (<div><p className="text-[11px] font-semibold text-emerald-600">Evolution et suivi</p><p className="text-sm text-on-surface">{s.evolution}</p></div>)}
-                      {s.conseil && (<div><p className="text-[11px] font-semibold text-emerald-600">Conseil</p><p className="text-sm text-on-surface">{s.conseil}</p></div>)}
-                      {!s.traitement && !s.evolution && !s.conseil && (<p className="text-sm text-on-surface-variant italic">Aucun contenu saisi</p>)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}

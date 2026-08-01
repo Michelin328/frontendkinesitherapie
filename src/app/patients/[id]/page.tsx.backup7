@@ -174,22 +174,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     }).then(() => {
       setPatient(prev => prev ? { ...prev, dateDerniereVisite: dateVisite + ' ' + heureFinFinale } : prev)
     }).catch(() => {})
-
-    // Enregistrement durable de la seance validee (visible dans Archives)
-    fetch(API + '/seances', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        patientId: Number(params.id),
-        date,
-        heureDebut,
-        heureFin: heureFinFinale,
-        traitement,
-        evolution,
-        conseil,
-        kine: 'Dr. Elena Vance',
-      }),
-    }).catch(() => {})
   }
 
   if (loading) return (

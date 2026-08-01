@@ -67,7 +67,7 @@ export default function DemandeCard({ demande }: { demande: any }) {
         }}
       >
         <div>
-          <strong>Patient :</strong> Non identifié
+          <strong>Patient :</strong> {demande.patientId}
           {'  '}| <strong>Type(s) :</strong> {typesKine || '—'}
           {'  '}| <strong>Urgence :</strong> {demande.urgence}
           <br />

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -35,7 +35,7 @@ function decoderToken(token: string): { userId?: string; exp?: number } | null {
   }
 }
 
-function AppShellInner({
+export default function AppShell({
   children,
   searchPlaceholder,
   showSearch = true,
@@ -104,6 +104,8 @@ function AppShellInner({
         setChecking(false)
       })
   }, [searchParams])
+    setChecking(false)
+  }, [searchParams])
 
   if (checking) {
     return (
@@ -147,17 +149,5 @@ function AppShellInner({
         )}
       </div>
     </div>
-  )
-}
-
-export default function AppShell(props: AppShellProps) {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-on-surface-variant">Chargement...</p>
-      </div>
-    }>
-      <AppShellInner {...props} />
-    </Suspense>
   )
 }

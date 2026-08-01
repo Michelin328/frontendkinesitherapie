@@ -4,7 +4,12 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
 
-export default function Sidebar() {
+interface SidebarProps {
+  open?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLanguage()
@@ -21,7 +26,13 @@ export default function Sidebar() {
 
   function deconnecter() {
     try {
-      localStorage.clear()
+      const cleTokenGarder = (cle: string) =>
+        cle.startsWith('historique_patient_') ||
+        cle.startsWith('religion_patient_') ||
+        cle.startsWith('brouillon_patient_')
+      Object.keys(localStorage)
+        .filter((cle) => !cleTokenGarder(cle))
+        .forEach((cle) => localStorage.removeItem(cle))
     } catch {}
     setConfirmDeconnexion(false)
     router.push('/')
@@ -29,15 +40,22 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 border-r border-sky-300 bg-sky-500 shadow-sm flex flex-col z-50">
+    <>
+      {open && (
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
+      )}
+      <aside className={`fixed left-0 top-0 h-full w-64 border-r border-sky-300 bg-sky-500 shadow-sm flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
           <span className="material-symbols-outlined text-white text-xl">clinical_notes</span>
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-white font-manrope leading-tight">CHU Andrainjato</h1>
           <p className="text-[10px] text-sky-100 uppercase tracking-widest">{t('sidebar_kinesitherapie')}</p>
         </div>
+        <button onClick={onClose} className="lg:hidden text-white/80 hover:text-white">
+          <span className="material-symbols-outlined">close</span>
+        </button>
       </div>
       <nav className="mt-4 flex-1 px-2 space-y-1">
         {navItems.map((item) => {
@@ -46,6 +64,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-white text-sky-700 font-semibold shadow-sm' : 'text-white hover:bg-white/15'}`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>
@@ -83,6 +102,7 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-    </aside>
+      </aside>
+    </>
   )
 }

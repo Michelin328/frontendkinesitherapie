@@ -165,31 +165,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     localStorage.setItem('historique_patient_' + params.id, JSON.stringify(nouvelHistorique))
     setValide(true)
     setShowConfirm(false)
-
-    const dateVisite = new Date().toISOString().slice(0, 10)
-    fetch(API + '/patients/' + params.id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dateDerniereVisite: dateVisite + ' ' + heureFinFinale }),
-    }).then(() => {
-      setPatient(prev => prev ? { ...prev, dateDerniereVisite: dateVisite + ' ' + heureFinFinale } : prev)
-    }).catch(() => {})
-
-    // Enregistrement durable de la seance validee (visible dans Archives)
-    fetch(API + '/seances', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        patientId: Number(params.id),
-        date,
-        heureDebut,
-        heureFin: heureFinFinale,
-        traitement,
-        evolution,
-        conseil,
-        kine: 'Dr. Elena Vance',
-      }),
-    }).catch(() => {})
   }
 
   if (loading) return (

@@ -89,3 +89,30 @@ export async function createRendezVous(
 ): Promise<Rendezvous> {
   return apiPost<Rendezvous>('/rendezvous', data)
 }
+
+// ---- Seances (historique valide, affiche dans Archives) ----
+export interface Seance {
+  id: number
+  patientId: number
+  patient?: {
+    id: number
+    nom: string
+    prenom: string
+    numeroDossier?: string
+    diagnostic?: string
+    dateNaissance?: string
+    sexe?: string
+  }
+  date: string
+  heureDebut: string
+  heureFin: string
+  traitement: string
+  evolution: string
+  conseil: string
+  kine: string
+  createdAt: string
+}
+
+export async function getSeances(): Promise<Seance[]> {
+  return apiFetch<Seance[]>('/seances')
+}

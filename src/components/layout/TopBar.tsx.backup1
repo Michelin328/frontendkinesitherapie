@@ -84,6 +84,7 @@ export default function TopBar({
 
   const [notifs, setNotifs] = useState<NotificationKine[]>([])
   const [open, setOpen] = useState(false)
+  const [onglet, setOnglet] = useState<'attente' | 'historique'>('attente')
   const menuRef = useRef<HTMLDivElement>(null)
   const dernierNombre = useRef<number | null>(null)
 
@@ -114,8 +115,14 @@ export default function TopBar({
   const nonLues = enAttente.filter((n) => !n.lue)
 
   const triees = [...enAttente].sort((a, b) => {
+    const diff = rangUrgence(a.urgence) - rangUrgence(b.urgence)
+    if (diff !== 0) return diff
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
+  const aujourdHui = new Date().toDateString()
+  const historiqueDuJour = [...notifs]
+    .filter((n) => new Date(n.createdAt).toDateString() === aujourdHui)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   useEffect(() => {
     if (dernierNombre.current !== null && nonLues.length > dernierNombre.current) {
@@ -185,13 +192,27 @@ export default function TopBar({
             <div className="absolute right-0 mt-3 w-96 max-h-[460px] overflow-y-auto bg-surface rounded-xl border border-outline-variant shadow-xl z-50">
               <div className="px-4 py-3 border-b border-outline-variant sticky top-0 bg-surface">
                 <p className="font-semibold text-on-surface text-sm mb-2">Notifications ({nonLues.length})</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOnglet('attente')}
+                    className={'flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ' + (onglet === 'attente' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low/70')}
+                  >
+                    En attente
+                  </button>
+                  <button
+                    onClick={() => setOnglet('historique')}
+                    className={'flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ' + (onglet === 'historique' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low/70')}
+                  >
+                    Historique
+                  </button>
+                </div>
               </div>
-              {triees.length === 0 ? (
+              {(onglet === 'attente' ? triees : historiqueDuJour).length === 0 ? (
                 <div className="py-8 text-center text-on-surface-variant text-sm">
-                  Aucune notification en attente
+                  {onglet === 'attente' ? 'Aucune notification en attente' : "Aucune notification aujourd'hui"}
                 </div>
               ) : (
-                triees.map((n) => {
+                (onglet === 'attente' ? triees : historiqueDuJour).map((n) => {
                   const s = styleUrgence(n.urgence)
                   return (
                     <div
@@ -207,6 +228,11 @@ export default function TopBar({
                           <span className={'text-[10px] font-bold px-2 py-0.5 rounded-full ' + s.badge}>
                             {n.urgence}
                           </span>
+                          {onglet === 'historique' && (
+                            <span className={'text-[10px] font-bold px-2 py-0.5 rounded-full ' + (n.statut === 'PLANIFIEE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
+                              {n.statut === 'PLANIFIEE' ? 'Planifiee' : 'En attente'}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] text-on-surface-variant">{formatDateHeure(n.createdAt)}</span>
                       </div>

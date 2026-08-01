@@ -10,8 +10,6 @@ interface Patient {
   id: number; numeroDossier: string; nom: string; prenom: string
   dateNaissance: string; sexe: string; diagnostic: string
   statut: string; dateAdmission: string; dateDerniereVisite: string
-  urgence?: string; alertes?: string; objectifs?: string
-  remarques?: string; nomMedecinPrescripteur?: string; antecedents?: string
 }
 
 interface RendezVous {
@@ -25,7 +23,6 @@ export default function PatientsPage() {
   const { t } = useLanguage()
   const router = useRouter()
   const [confirmAnnulerRdv, setConfirmAnnulerRdv] = useState<RendezVous | null>(null)
-  const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [search, setSearch] = useState('')
@@ -139,8 +136,7 @@ export default function PatientsPage() {
             <thead>
               <tr className="border-b border-outline-variant bg-surface-container-low/50">
                 <th className="table-header">{t('pat_colPatient')}</th>
-                <th className="table-header">Diagnostic</th>
-                <th className="table-header text-center">Détails</th>
+                <th className="table-header">{t('pat_colDiagnostic')}</th>
                 <th className="table-header">Dernière visite</th>
                 <th className="table-header text-center">Action</th>
               </tr>
@@ -160,13 +156,6 @@ export default function PatientsPage() {
                     </td>
                     <td className="table-cell">
                       <p className="text-sm text-on-surface max-w-[220px] truncate">{p.diagnostic || '-'}</p>
-                    </td>
-                    <td className="table-cell text-center">
-                      <button onClick={() => setDetailsPatient(p)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
-                        Détails
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                      </button>
                     </td>
                     <td className="table-cell text-xs">
                       <span className="text-on-surface-variant">
@@ -282,52 +271,6 @@ export default function PatientsPage() {
                 className="flex-1 px-4 py-2.5 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 shadow-sm">
                 Confirmer
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODALE DETAILS PRESCRIPTION */}
-      {detailsPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-500">description</span>
-                Détails de la prescription
-              </h3>
-              <button onClick={() => setDetailsPatient(null)} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Urgence</p>
-                <p className="text-sm text-on-surface">{detailsPatient.urgence || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Alertes</p>
-                <p className="text-sm text-on-surface">{detailsPatient.alertes || 'Aucune'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Renseignements</p>
-                <p className="text-sm text-on-surface">{detailsPatient.antecedents || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Diagnostic</p>
-                <p className="text-sm text-on-surface">{detailsPatient.diagnostic || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Objectifs</p>
-                <p className="text-sm text-on-surface">{detailsPatient.objectifs || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Remarques</p>
-                <p className="text-sm text-on-surface">{detailsPatient.remarques || 'Aucune'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Médecin prescripteur</p>
-                <p className="text-sm text-on-surface">{detailsPatient.nomMedecinPrescripteur || 'Non renseigné'}</p>
-              </div>
             </div>
           </div>
         </div>

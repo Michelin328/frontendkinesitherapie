@@ -120,7 +120,7 @@ export default function PreinscriptionPage() {
 
     if (res.ok) {
       // Marque la notification comme lue côté backend + localement.
-      fetch(`${API}/notifications/${demandeActive.id}/planifiee`, { method: 'PATCH' }).catch(() => {})
+      fetch(`${API}/notifications/${demandeActive.id}/lire`, { method: 'PATCH' }).catch(() => {})
       setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
       setDemandeActive(null)
     }

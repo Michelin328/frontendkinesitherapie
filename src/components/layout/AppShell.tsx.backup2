@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -12,30 +12,10 @@ interface AppShellProps {
   topBarActions?: React.ReactNode
 }
 
-const AUTH_URL = 'https://authentification-front.vercel.app/login'
-const USER_API_URL = process.env.NEXT_PUBLIC_USER_API_URL
+const AUTH_URL = 'https://auth-client-dun.vercel.app/login'
 const TOKEN_KEY = 'authToken'
 
-function deconnecter(redirect = true) {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem('serviceId')
-  if (redirect) {
-    const redirectUrl = encodeURIComponent(window.location.origin)
-    window.location.href = `${AUTH_URL}?redirect=${redirectUrl}`
-  }
-}
-
-function decoderToken(token: string): { userId?: string; exp?: number } | null {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(decoded)
-  } catch {
-    return null
-  }
-}
-
-function AppShellInner({
+export default function AppShell({
   children,
   searchPlaceholder,
   showSearch = true,
@@ -62,47 +42,15 @@ function AppShellInner({
       url.searchParams.delete('serviceId')
       window.history.replaceState({}, '', url.toString())
     }
+
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
-      deconnecter()
+      const redirectUrl = encodeURIComponent(window.location.origin)
+      window.location.href = `${AUTH_URL}?redirect=${redirectUrl}`
       return
     }
 
-    const payload = decoderToken(token)
-    if (!payload || !payload.exp || !payload.userId) {
-      deconnecter()
-      return
-    }
-
-    // Verification locale : la date d'expiration est-elle depassee ?
-    const maintenant = Math.floor(Date.now() / 1000)
-    if (payload.exp < maintenant) {
-      deconnecter()
-      return
-    }
-
-    // Verification serveur : le token est-il toujours accepte ?
-    if (!USER_API_URL) {
-      setChecking(false)
-      return
-    }
-
-    fetch(`${USER_API_URL}/${payload.userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          deconnecter()
-          return
-        }
-        setChecking(false)
-      })
-      .catch(() => {
-        // En cas d'erreur reseau (service temporairement indisponible),
-        // on laisse passer si le token n'est pas expire localement,
-        // pour ne pas bloquer l'utilisateur a cause d'une panne serveur.
-        setChecking(false)
-      })
+    setChecking(false)
   }, [searchParams])
 
   if (checking) {
@@ -147,17 +95,5 @@ function AppShellInner({
         )}
       </div>
     </div>
-  )
-}
-
-export default function AppShell(props: AppShellProps) {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-on-surface-variant">Chargement...</p>
-      </div>
-    }>
-      <AppShellInner {...props} />
-    </Suspense>
   )
 }

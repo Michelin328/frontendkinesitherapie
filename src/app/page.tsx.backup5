@@ -130,8 +130,8 @@ export default function DashboardPage() {
         {/* Patients (3 niveaux) */}
         <div className="bg-red-50 rounded-xl border border-red-200 shadow-sm p-5">
           <div className="flex items-center justify-between">
-            <p className="text-lg font-bold text-black">Répartitions de patients</p>
-            <span className="text-lg font-extrabold text-black tabular-nums">
+            <p className="text-2xl font-bold text-indigo-700">Répartitions de patients</p>
+            <span className="text-sm font-extrabold text-red-700 tabular-nums">
               {stats.tresUrgent + stats.urgent + stats.normal}
             </span>
           </div>

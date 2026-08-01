@@ -18,10 +18,6 @@ interface Demande {
   urgence: string
   diagnostic: string
   renseignements: string
-  alertes?: string
-  objectifs?: string
-  remarques?: string
-  nomMedecinPrescripteur?: string
   lue: boolean
   statut: string
   createdAt: string
@@ -104,11 +100,6 @@ export default function PreinscriptionPage() {
       diagnostic: demandeActive.diagnostic,
       renseignements: demandeActive.renseignements,
       typeKine: demandeActive.typeKine,
-      urgence: demandeActive.urgence,
-      alertes: demandeActive.alertes,
-      objectifs: demandeActive.objectifs,
-      remarques: demandeActive.remarques,
-      nomMedecinPrescripteur: demandeActive.nomMedecinPrescripteur,
       date,
       heureDebut,
       heureFin,
@@ -120,7 +111,7 @@ export default function PreinscriptionPage() {
 
     if (res.ok) {
       // Marque la notification comme lue côté backend + localement.
-      fetch(`${API}/notifications/${demandeActive.id}/planifiee`, { method: 'PATCH' }).catch(() => {})
+      fetch(`${API}/notifications/${demandeActive.id}/lire`, { method: 'PATCH' }).catch(() => {})
       setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
       setDemandeActive(null)
     }

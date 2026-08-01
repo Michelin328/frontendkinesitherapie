@@ -16,11 +16,6 @@ export interface PlanifierInput {
   diagnostic?: string
   renseignements?: string
   typeKine?: string
-  urgence?: string
-  alertes?: string
-  objectifs?: string
-  remarques?: string
-  nomMedecinPrescripteur?: string
   date: string
   heureDebut: string
   heureFin: string
@@ -56,11 +51,6 @@ export async function planifierRendezVous(
         telephone: acc.telephone,
         diagnostic: input.diagnostic || input.typeKine || '',
         antecedents: input.renseignements || '',
-        urgence: input.urgence || '',
-        alertes: input.alertes || '',
-        objectifs: input.objectifs || '',
-        remarques: input.remarques || '',
-        nomMedecinPrescripteur: input.nomMedecinPrescripteur || '',
         statut: 'actif',
         dateAdmission: new Date().toISOString().slice(0, 10),
       })
