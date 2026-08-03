@@ -30,6 +30,7 @@ interface DemandeKine {
   id: string
   urgence: string
   createdAt: string
+  patientId: string
 }
 
 function localDay(d = new Date()) {
@@ -74,14 +75,20 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const today = localDay()
     const rdvAujourdhui = rdvs.filter((r) => r.date === today)
-    const demandesAujourdhui = demandes.filter((d) => localDay(new Date(d.createdAt)) === today)
+
+    function urgenceDuRdv(rdv: RendezVous) {
+      const numeroDossier = rdv.patient?.numeroDossier
+      const demande = demandes.find((d) => d.patientId === numeroDossier)
+      return demande?.urgence || 'NORMAL'
+    }
+
     return {
       rdvAujourdhui: rdvAujourdhui.length,
-      tresUrgent: demandesAujourdhui.filter((d) => d.urgence === 'TRES_URGENT').length,
-      urgent: demandesAujourdhui.filter((d) => d.urgence === 'URGENT').length,
-      normal: demandesAujourdhui.filter((d) => d.urgence === 'NORMAL').length,
-      interne: rdvs.filter((r) => !estExterne(r)).length,
-      externe: rdvs.filter((r) => estExterne(r)).length,
+      tresUrgent: rdvAujourdhui.filter((r) => urgenceDuRdv(r) === 'TRES_URGENT').length,
+      urgent: rdvAujourdhui.filter((r) => urgenceDuRdv(r) === 'URGENT').length,
+      normal: rdvAujourdhui.filter((r) => urgenceDuRdv(r) === 'NORMAL').length,
+      interne: rdvAujourdhui.filter((r) => !estExterne(r)).length,
+      externe: rdvAujourdhui.filter((r) => estExterne(r)).length,
       liste: rdvAujourdhui.sort((a, b) =>
         (a.heureDebut || '').localeCompare(b.heureDebut || ''),
       ),
