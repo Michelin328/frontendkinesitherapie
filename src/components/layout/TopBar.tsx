@@ -70,6 +70,12 @@ function jouerCarillon() {
   } catch (e) {}
 }
 
+function rangUrgence(u: string) {
+  if (u === 'TRES_URGENT') return 0
+  if (u === 'URGENT') return 1
+  return 2
+}
+
 function styleUrgence(u: string) {
   if (u === 'TRES_URGENT') return { badge: 'bg-red-100 text-red-700', bord: 'border-l-red-500', fond: 'bg-red-50' }
   if (u === 'URGENT') return { badge: 'bg-orange-100 text-orange-700', bord: 'border-l-orange-400', fond: 'bg-orange-50' }
@@ -130,6 +136,8 @@ export default function TopBar({
   const nonLues = enAttente.filter((n) => !n.lue)
 
   const triees = [...enAttente].sort((a, b) => {
+    const diff = rangUrgence(a.urgence) - rangUrgence(b.urgence)
+    if (diff !== 0) return diff
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 
