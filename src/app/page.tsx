@@ -232,6 +232,9 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-sm text-on-surface-variant">{rdv.motif}</p>
                 </div>
+                <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ' + (estExterne(rdv) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
+                  {estExterne(rdv) ? 'Externe' : 'Interne'}
+                </span>
                 <span className="material-symbols-outlined text-on-surface-variant text-lg flex-shrink-0">
                   chevron_right
                 </span>
