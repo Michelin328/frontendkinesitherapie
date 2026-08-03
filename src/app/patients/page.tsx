@@ -21,6 +21,10 @@ interface RendezVous {
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
+function estExterne(p: Patient) {
+  return (p.numeroDossier || '').startsWith('CHU-')
+}
+
 export default function PatientsPage() {
   const { t } = useLanguage()
   const router = useRouter()
@@ -138,10 +142,11 @@ export default function PatientsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                <th className="table-header">{t('pat_colPatient')}</th>
-                <th className="table-header">Diagnostic</th>
-                <th className="table-header text-center">Détails</th>
-                <th className="table-header">Dernière visite</th>
+                <th className="table-header bg-slate-50">{t('pat_colPatient')}</th>
+                <th className="table-header bg-amber-50">Diagnostic</th>
+                <th className="table-header text-center">Type</th>
+                <th className="table-header text-center bg-sky-50">Détails</th>
+                <th className="table-header bg-violet-50">Dernière visite</th>
                 <th className="table-header text-center">Action</th>
               </tr>
             </thead>
@@ -150,7 +155,7 @@ export default function PatientsPage() {
                 const rdv = rdvDuPatient(p.id)
                 return (
                   <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="table-cell">
+                    <td className="table-cell bg-slate-50/50">
                       <div>
                         <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
                         <p className="text-xs text-on-surface-variant">
@@ -158,17 +163,22 @@ export default function PatientsPage() {
                         </p>
                       </div>
                     </td>
-                    <td className="table-cell">
+                    <td className="table-cell bg-amber-50/50">
                       <p className="text-sm text-on-surface max-w-[220px] truncate">{p.diagnostic || '-'}</p>
                     </td>
                     <td className="table-cell text-center">
+                      <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (estExterne(p) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
+                        {estExterne(p) ? 'Externe' : 'Interne'}
+                      </span>
+                    </td>
+                    <td className="table-cell text-center bg-sky-50/50">
                       <button onClick={() => setDetailsPatient(p)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
                         Détails
                         <span className="material-symbols-outlined text-sm">visibility</span>
                       </button>
                     </td>
-                    <td className="table-cell text-xs">
+                    <td className="table-cell text-xs bg-violet-50/50">
                       <span className="text-on-surface-variant">
                         {p.dateDerniereVisite || '-'}
                       </span>
