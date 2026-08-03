@@ -193,6 +193,22 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     }).then(() => {
       setPatient(prev => prev ? { ...prev, dateDerniereVisite: dateVisite + ' ' + heureFinFinale } : prev)
     }).catch(() => {})
+    // Marquer le rendez-vous du jour comme effectue (pour les rapports)
+    fetch(API + '/rendezvous')
+      .then(r => r.json())
+      .then((all: any[]) => {
+        const rdvDuJour = Array.isArray(all)
+          ? all.find(r => String(r.patientId) === String(params.id) && r.date === dateVisite && r.statut === 'planifie')
+          : null
+        if (rdvDuJour) {
+          fetch(API + '/rendezvous/' + rdvDuJour.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ statut: 'effectue' }),
+          }).catch(() => {})
+        }
+      })
+      .catch(() => {})
 
     // Enregistrement durable de la seance validee (visible dans Archives)
     fetch(API + '/seances', {

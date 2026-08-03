@@ -8,7 +8,7 @@ const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Patient {
   id: number; nom: string; prenom: string; diagnostic?: string;
-  numeroDossier?: string; statut?: string;
+  numeroDossier?: string; statut?: string; sexe?: string;
 }
 
 interface RendezVous {
@@ -31,12 +31,20 @@ function startOfWeek(d: Date) {
 export default function RapportPage() {
   const { t } = useLanguage()
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
 
   useEffect(() => {
     fetch(`${API}/rendezvous`, { cache: 'no-store' })
       .then(r => r.json())
       .then((data: RendezVous[]) => setRdvs(Array.isArray(data) ? data : []))
       .catch(() => setRdvs([]))
+  }, [])
+
+  useEffect(() => {
+    fetch(`${API}/patients`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then((data: Patient[]) => setPatients(Array.isArray(data) ? data : []))
+      .catch(() => setPatients([]))
   }, [])
   const [periode, setPeriode] = useState<Periode>('mois')
   const [refDate, setRefDate] = useState(new Date())
@@ -71,8 +79,17 @@ export default function RapportPage() {
     const annules   = filtered.filter(r => r.statut === 'annule').length
     const byType: Record<string,number> = {}
     filtered.forEach(r => { byType[r.type||'autre'] = (byType[r.type||'autre']||0)+1 })
-    return { total, effectues, annules, byType }
-  }, [filtered])
+
+    const patientIds = new Set(filtered.map(r => r.patientId))
+    let hommes = 0, femmes = 0
+    patientIds.forEach(id => {
+      const p = patients.find(pp => pp.id === id)
+      if (p?.sexe === 'M') hommes++
+      else if (p?.sexe === 'F') femmes++
+    })
+
+    return { total, effectues, annules, byType, hommes, femmes }
+  }, [filtered, patients])
 
   function navigate(dir: number) {
     const d = new Date(refDate)
@@ -153,6 +170,8 @@ export default function RapportPage() {
             { icon: 'event_note',   label: 'Total RDV',   value: stats.total,      color: 'text-primary',     bg: 'bg-teal-50' },
             { icon: 'check_circle', label: 'Effectués',   value: stats.effectues,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
             { icon: 'cancel',       label: 'Annulés',     value: stats.annules,    color: 'text-red-500',     bg: 'bg-red-50' },
+          { icon: 'man',          label: 'Hommes',      value: stats.hommes,     color: 'text-blue-600',    bg: 'bg-blue-50' },
+          { icon: 'woman',        label: 'Femmes',      value: stats.femmes,     color: 'text-pink-600',    bg: 'bg-pink-50' },
           ].map(s => (
             <div key={s.label} className={'rounded-xl border border-outline-variant p-5 flex flex-col gap-2 ' + s.bg}>
               <div className="flex items-center gap-2">
