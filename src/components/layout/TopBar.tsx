@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
+import { getUtilisateurConnecte } from '@/lib/utilisateur'
 import { planifierRendezVous } from '@/app/demandes-kine/actions'
 
 const API = process.env.NEXT_PUBLIC_API_URL
@@ -100,6 +101,7 @@ export default function TopBar({
   const router = useRouter()
   const placeholder = searchPlaceholder || t('topbar_rechercher')
 
+  const [utilisateur, setUtilisateur] = useState(getUtilisateurConnecte())
   const [notifs, setNotifs] = useState<NotificationKine[]>([])
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -121,6 +123,7 @@ export default function TopBar({
   }
 
   useEffect(() => {
+    setUtilisateur(getUtilisateurConnecte())
     fetchNotifs()
     const interval = setInterval(fetchNotifs, 30000)
     return () => clearInterval(interval)
@@ -333,11 +336,10 @@ export default function TopBar({
         </button>
         <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-outline-variant">
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-primary">EV</span>
+            <span className="text-sm font-bold text-primary">{utilisateur.initiales}</span>
           </div>
           <div className="text-right hidden md:block">
-            <p className="text-sm font-bold text-on-surface leading-none font-manrope">Dr. Elena Vance</p>
-            <p className="text-xs text-on-surface-variant uppercase tracking-wider mt-1">{t('topbar_chefDeService')}</p>
+            <p className="text-sm font-bold text-on-surface leading-none font-manrope">{'Kiné ' + utilisateur.displayName}</p>
           </div>
         </div>
       </div>

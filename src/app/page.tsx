@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { getUtilisateurConnecte } from '@/lib/utilisateur'
 import Link from 'next/link'
 import AppShell from '@/components/layout/AppShell'
 import { useLanguage } from '@/context/LanguageContext'
@@ -53,10 +54,12 @@ export default function DashboardPage() {
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [demandes, setDemandes] = useState<DemandeKine[]>([])
 
+  const [nomUtilisateur, setNomUtilisateur] = useState('Utilisateur')
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
     setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 1000)
+    setNomUtilisateur(getUtilisateurConnecte().displayName)
     return () => clearInterval(id)
   }, [])
 
@@ -101,7 +104,7 @@ export default function DashboardPage() {
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-4xl font-extrabold text-on-surface tracking-tight">
-            {t('dash_bonjour')}
+            {'Bonjour, Kiné ' + nomUtilisateur}
           </h2>
           <p className="font-body-lg text-on-surface-variant mt-1">
             {t('dash_apercu')}
