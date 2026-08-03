@@ -17,7 +17,6 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
   const navItems = [
     { href: '/', icon: 'dashboard', label: t('sidebar_tableauDeBord') },
-    { href: '/preinscription', icon: 'assignment_ind', label: t('sidebar_preinscription') },
     { href: '/patients', icon: 'group', label: t('sidebar_patients') },
     { href: '/calendrier', icon: 'calendar_today', label: t('sidebar_calendrier') },
     { href: '/archives', icon: 'inventory_2', label: t('sidebar_archives') },

@@ -3,17 +3,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
+import { planifierRendezVous } from '@/app/demandes-kine/actions'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
 interface NotificationKine {
   id: number
+  prescriptionId: string
+  demandeId: string
   patientId: string
   patientNom?: string | null
   patientPrenom?: string | null
   typeKine: string
   urgence: string
   diagnostic: string
+  renseignements?: string
+  alertes?: string
+  objectifs?: string
+  remarques?: string
+  nomMedecinPrescripteur?: string
   statut: string
   lue: boolean
   createdAt: string
@@ -27,6 +35,12 @@ interface TopBarProps {
   onMenuClick?: () => void
   previewMode?: 'desktop' | 'tablet' | 'mobile'
   onTogglePreview?: () => void
+}
+
+type OptionPlanif = 'maintenant' | '10min' | '20min' | '30min' | 'personnalise'
+
+function pad(n: number) {
+  return String(n).padStart(2, '0')
 }
 
 function jouerCarillon() {
@@ -56,12 +70,6 @@ function jouerCarillon() {
   } catch (e) {}
 }
 
-function rangUrgence(u: string) {
-  if (u === 'TRES_URGENT') return 0
-  if (u === 'URGENT') return 1
-  return 2
-}
-
 function styleUrgence(u: string) {
   if (u === 'TRES_URGENT') return { badge: 'bg-red-100 text-red-700', bord: 'border-l-red-500', fond: 'bg-red-50' }
   if (u === 'URGENT') return { badge: 'bg-orange-100 text-orange-700', bord: 'border-l-orange-400', fond: 'bg-orange-50' }
@@ -87,6 +95,14 @@ export default function TopBar({
   const menuRef = useRef<HTMLDivElement>(null)
   const dernierNombre = useRef<number | null>(null)
 
+  const [demandeActive, setDemandeActive] = useState<NotificationKine | null>(null)
+  const [option, setOption] = useState<OptionPlanif>('maintenant')
+  const [dateChoisie, setDateChoisie] = useState('')
+  const [heureChoisie, setHeureChoisie] = useState('')
+  const [planifiees, setPlanifiees] = useState<Set<number>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+
   function fetchNotifs() {
     fetch(`${API}/notifications`, { cache: 'no-store' })
       .then((r) => r.json())
@@ -110,7 +126,7 @@ export default function TopBar({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const enAttente = notifs.filter((n) => n.statut === 'CREEE')
+  const enAttente = notifs.filter((n) => n.statut === 'CREEE' && !planifiees.has(n.id))
   const nonLues = enAttente.filter((n) => !n.lue)
 
   const triees = [...enAttente].sort((a, b) => {
@@ -134,15 +150,81 @@ export default function TopBar({
     return date + ' a ' + heure
   }
 
-  function ouvrirNotif(n: NotificationKine) {
+  function marquerLue(n: NotificationKine) {
     if (!n.lue) {
       fetch(`${API}/notifications/${n.id}/lire`, { method: 'PATCH' })
         .then(() => fetchNotifs())
         .catch(() => {})
     }
-    setOpen(false)
-    router.push('/preinscription')
   }
+
+  function ouvrirPlanification(n: NotificationKine) {
+    marquerLue(n)
+    setDemandeActive(n)
+    setOption('maintenant')
+    setFeedback(null)
+    const maintenant = new Date()
+    setDateChoisie(maintenant.toISOString().slice(0, 10))
+    setHeureChoisie(maintenant.toTimeString().slice(0, 5))
+  }
+
+  function fermerModale() {
+    setDemandeActive(null)
+  }
+
+  function calculerDateRdv(): Date {
+    const maintenant = new Date()
+    if (option === '10min') return new Date(maintenant.getTime() + 10 * 60000)
+    if (option === '20min') return new Date(maintenant.getTime() + 20 * 60000)
+    if (option === '30min') return new Date(maintenant.getTime() + 30 * 60000)
+    if (option === 'personnalise') return new Date(dateChoisie + 'T' + heureChoisie)
+    return maintenant
+  }
+
+  async function confirmerPlanification() {
+    if (!demandeActive) return
+    const dateRdv = calculerDateRdv()
+    const date = `${dateRdv.getFullYear()}-${pad(dateRdv.getMonth() + 1)}-${pad(dateRdv.getDate())}`
+    const heureDebut = `${pad(dateRdv.getHours())}:${pad(dateRdv.getMinutes())}`
+    const heureFin = `${pad((dateRdv.getHours() + 1) % 24)}:${pad(dateRdv.getMinutes())}`
+
+    setBusy(true)
+    setFeedback(null)
+    const res = await planifierRendezVous({
+      prescriptionId: demandeActive.prescriptionId,
+      demandeId: demandeActive.demandeId,
+      patientId: demandeActive.patientId,
+      diagnostic: demandeActive.diagnostic,
+      renseignements: demandeActive.renseignements,
+      typeKine: demandeActive.typeKine,
+      urgence: demandeActive.urgence,
+      alertes: demandeActive.alertes,
+      objectifs: demandeActive.objectifs,
+      remarques: demandeActive.remarques,
+      nomMedecinPrescripteur: demandeActive.nomMedecinPrescripteur,
+      date,
+      heureDebut,
+      heureFin,
+      type: 'soin',
+      motif: demandeActive.diagnostic || demandeActive.typeKine || 'Séance de kinésithérapie',
+    })
+    setBusy(false)
+    setFeedback(res)
+
+    if (res.ok) {
+      fetch(`${API}/notifications/${demandeActive.id}/planifiee`, { method: 'PATCH' }).catch(() => {})
+      setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
+      setDemandeActive(null)
+    }
+  }
+
+  const OPTIONS: { valeur: OptionPlanif; label: string }[] = [
+    { valeur: 'maintenant', label: 'Maintenant' },
+    { valeur: '10min', label: 'Apres 10 min' },
+    { valeur: '20min', label: 'Apres 20 min' },
+    { valeur: '30min', label: 'Apres 30 min' },
+    { valeur: 'personnalise', label: 'Personnalise' },
+  ]
 
   return (
     <header className="sticky top-0 z-40 w-full h-16 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-4 md:px-8 flex justify-between items-center gap-3">
@@ -196,7 +278,7 @@ export default function TopBar({
                   return (
                     <div
                       key={n.id}
-                      onClick={() => ouvrirNotif(n)}
+                      onClick={() => marquerLue(n)}
                       className={
                         'px-4 py-3 border-b border-outline-variant last:border-b-0 transition-colors border-l-4 cursor-pointer ' +
                         (n.lue ? 'bg-surface hover:bg-surface-container-low/50 border-l-outline-variant' : s.fond + ' hover:brightness-95 ' + s.bord)
@@ -212,10 +294,19 @@ export default function TopBar({
                       </div>
                       <p className={'text-sm text-on-surface ' + (n.lue ? 'font-medium' : 'font-bold')}>{n.patientNom && n.patientPrenom ? `${n.patientPrenom} ${n.patientNom}` : 'Patient inconnu'}</p>
                       <p className="text-xs text-on-surface-variant truncate">{n.typeKine} — {n.diagnostic}</p>
-                      <p className="text-[11px] text-primary font-semibold mt-1 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px]">call_made</span>
-                        Provenance : Prescription
-                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-[11px] text-primary font-semibold flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px]">call_made</span>
+                          Provenance : Prescription
+                        </p>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); ouvrirPlanification(n) }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-xs">event_available</span>
+                          Planifier
+                        </button>
+                      </div>
                     </div>
                   )
                 })
@@ -237,6 +328,67 @@ export default function TopBar({
           </div>
         </div>
       </div>
+
+      {demandeActive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary">event_available</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-on-surface">Planifier le rendez-vous</h3>
+                <p className="text-xs text-on-surface-variant">{demandeActive.patientNom && demandeActive.patientPrenom ? `${demandeActive.patientPrenom} ${demandeActive.patientNom}` : 'Patient inconnu'} — {demandeActive.typeKine}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              {OPTIONS.map((opt) => (
+                <button key={opt.valeur} onClick={() => setOption(opt.valeur)}
+                  className={'w-full text-left px-4 py-3 rounded-lg border text-sm font-semibold transition-colors flex items-center justify-between ' +
+                    (option === opt.valeur
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'border-outline-variant text-on-surface hover:bg-surface-container-low')}>
+                  {opt.label}
+                  {option === opt.valeur && <span className="material-symbols-outlined text-lg">check_circle</span>}
+                </button>
+              ))}
+            </div>
+
+            {option === 'personnalise' && (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Date</label>
+                  <input type="date" value={dateChoisie} onChange={(e) => setDateChoisie(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Heure</label>
+                  <input type="time" value={heureChoisie} onChange={(e) => setHeureChoisie(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                </div>
+              </div>
+            )}
+
+            {feedback && (
+              <p className={'mt-3 text-sm font-semibold ' + (feedback.ok ? 'text-green-600' : 'text-red-600')}>
+                {feedback.message}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={fermerModale} disabled={busy}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low disabled:opacity-50">
+                Annuler
+              </button>
+              <button onClick={confirmerPlanification} disabled={busy}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm disabled:opacity-50">
+                {busy ? 'Planification…' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
