@@ -148,11 +148,30 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     localStorage.setItem('religion_patient_' + params.id, v)
   }
 
-  function planifierRdv() {
-    if (!rdvDate || !rdvHeureDeb) return
-    setRdvConfirme(true)
-    setShowRdvModal(false)
-    setTimeout(() => setRdvConfirme(false), 4000)
+  async function planifierRdv() {
+    if (!rdvDate || !rdvHeureDeb || !patient) return
+    const [h, m] = rdvHeureDeb.split(':').map(Number)
+    const heureFinCalc = String((h + 1) % 24).padStart(2, '0') + ':' + String(m).padStart(2, '0')
+    try {
+      await fetch(API + '/rendezvous', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: rdvDate,
+          heureDebut: rdvHeureDeb,
+          heureFin: heureFinCalc,
+          type: rdvType || 'soin',
+          motif: patient.diagnostic || rdvType || 'Seance de kinesitherapie',
+          statut: 'planifie',
+          patientId: patient.id,
+        }),
+      })
+      setRdvConfirme(true)
+      setShowRdvModal(false)
+      setTimeout(() => setRdvConfirme(false), 4000)
+    } catch {
+      // en cas d'echec, la modale reste ouverte pour reessayer
+    }
   }
 
   function confirmerValidation() {
