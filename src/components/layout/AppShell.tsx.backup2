@@ -65,6 +65,47 @@ function AppShellInner({
     // BYPASS TEMPORAIRE - service auth externe en panne (a retirer une fois reparé)
     setChecking(false)
     return
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      deconnecter()
+      return
+    }
+
+    const payload = decoderToken(token)
+    if (!payload || !payload.exp || !payload.userId) {
+      deconnecter()
+      return
+    }
+
+    // Verification locale : la date d'expiration est-elle depassee ?
+    const maintenant = Math.floor(Date.now() / 1000)
+    if (payload.exp < maintenant) {
+      deconnecter()
+      return
+    }
+
+    // Verification serveur : le token est-il toujours accepte ?
+    if (!USER_API_URL) {
+      setChecking(false)
+      return
+    }
+
+    fetch(`${USER_API_URL}/${payload.userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          deconnecter()
+          return
+        }
+        setChecking(false)
+      })
+      .catch(() => {
+        // En cas d'erreur reseau (service temporairement indisponible),
+        // on laisse passer si le token n'est pas expire localement,
+        // pour ne pas bloquer l'utilisateur a cause d'une panne serveur.
+        setChecking(false)
+      })
   }, [searchParams])
 
   if (checking) {
