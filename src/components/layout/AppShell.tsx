@@ -63,9 +63,42 @@ function AppShellInner({
       url.searchParams.delete('serviceId')
       window.history.replaceState({}, '', url.toString())
     }
-    // BYPASS TEMPORAIRE - service auth externe en panne (a retirer une fois reparé)
-    setChecking(false)
-    return
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      deconnecter()
+      return
+    }
+
+    const payload = decoderToken(token)
+    if (!payload || !payload.exp || !payload.userId) {
+      deconnecter()
+      return
+    }
+
+    const maintenant = Math.floor(Date.now() / 1000)
+    if (payload.exp < maintenant) {
+      deconnecter()
+      return
+    }
+
+    if (!USER_API_URL) {
+      setChecking(false)
+      return
+    }
+
+    fetch(`${USER_API_URL}/${payload.userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          deconnecter()
+          return
+        }
+        setChecking(false)
+      })
+      .catch(() => {
+        setChecking(false)
+      })
   }, [searchParams])
 
   if (checking) {
