@@ -35,6 +35,8 @@ interface TopBarProps {
   onMenuClick?: () => void
   previewMode?: 'desktop' | 'tablet' | 'mobile'
   onTogglePreview?: () => void
+  onNouvelleNotification?: () => void
+  onBellClick?: () => void
 }
 
 type OptionPlanif = 'maintenant' | '10min' | '20min' | '30min' | 'personnalise'
@@ -89,6 +91,8 @@ export default function TopBar({
   onMenuClick,
   previewMode = 'desktop',
   onTogglePreview,
+  onNouvelleNotification,
+  onBellClick,
 }: TopBarProps) {
   const previewIcon = previewMode === 'tablet' ? 'tablet_mac' : previewMode === 'mobile' ? 'smartphone' : 'devices'
   const previewTitre = previewMode === 'tablet' ? 'Apercu tablette (clic: mobile)' : previewMode === 'mobile' ? 'Apercu mobile (clic: bureau)' : 'Apercu responsive (clic: tablette)'
@@ -147,6 +151,7 @@ export default function TopBar({
       for (let i = 0; i < diff; i++) {
         setTimeout(() => jouerCarillon(), i * 1100)
       }
+      onNouvelleNotification?.()
     }
     dernierNombre.current = nonLues.length
   }, [nonLues.length])
@@ -262,7 +267,7 @@ export default function TopBar({
         </button>
 
         <div className="relative" ref={menuRef}>
-          <button onClick={() => setOpen((o) => !o)} className="relative text-on-surface-variant hover:text-primary transition-colors">
+          <button onClick={() => { setOpen((o) => !o); onBellClick?.() }} className="relative text-on-surface-variant hover:text-primary transition-colors">
             <span className="material-symbols-outlined">notifications</span>
             {nonLues.length > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-error rounded-full text-[10px] text-white flex items-center justify-center font-bold animate-pulse">
