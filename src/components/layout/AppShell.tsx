@@ -98,7 +98,7 @@ function AppShellInner({
         {banniereVisible && (
           <div className="mx-4 md:mx-8 mt-4 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-center gap-3">
             <span className="material-symbols-outlined text-amber-600">notifications_active</span>
-            <p className="text-sm font-semibold text-amber-800 flex-1">Misy demande vaovao tonga ! Jereo ny fampahafantarana.</p>
+            <p className="text-sm font-semibold text-amber-800 flex-1">Une nouvelle demande est arrivée ! Consultez les notifications.</p>
             <button onClick={() => setBanniereVisible(false)} className="text-amber-600 hover:text-amber-800 flex-shrink-0">
               <span className="material-symbols-outlined text-lg">close</span>
             </button>
