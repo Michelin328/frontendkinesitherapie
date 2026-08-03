@@ -155,7 +155,7 @@ export default function PatientsPage() {
                 const rdv = rdvDuPatient(p.id)
                 return (
                   <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="table-cell bg-slate-50/50">
+                    <td className="table-cell bg-slate-100">
                       <div>
                         <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
                         <p className="text-xs text-on-surface-variant">
@@ -163,7 +163,7 @@ export default function PatientsPage() {
                         </p>
                       </div>
                     </td>
-                    <td className="table-cell bg-amber-50/50">
+                    <td className="table-cell bg-amber-100">
                       <p className="text-sm text-on-surface max-w-[220px] truncate">{p.diagnostic || '-'}</p>
                     </td>
                     <td className="table-cell text-center">
@@ -171,14 +171,14 @@ export default function PatientsPage() {
                         {estExterne(p) ? 'Externe' : 'Interne'}
                       </span>
                     </td>
-                    <td className="table-cell text-center bg-sky-50/50">
+                    <td className="table-cell text-center bg-sky-100">
                       <button onClick={() => setDetailsPatient(p)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
                         Détails
                         <span className="material-symbols-outlined text-sm">visibility</span>
                       </button>
                     </td>
-                    <td className="table-cell text-xs bg-violet-50/50">
+                    <td className="table-cell text-xs bg-violet-100">
                       <span className="text-on-surface-variant">
                         {p.dateDerniereVisite || '-'}
                       </span>
