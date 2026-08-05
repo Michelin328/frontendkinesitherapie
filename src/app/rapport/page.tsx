@@ -94,22 +94,27 @@ export default function RapportPage() {
   , [rdvs, debut, fin])
 
   const stats = useMemo(() => {
-    const total     = filtered.length
-    const effectues = filtered.filter(r => r.statut === 'effectue' || r.statut === 'termine').length
-    const annules   = filtered.filter(r => estRdvRate(r, seances)).length
-    const byType: Record<string,number> = {}
-    filtered.forEach(r => { byType[r.type||'autre'] = (byType[r.type||'autre']||0)+1 })
+    const total   = filtered.length
+    const annules = filtered.filter(r => estRdvRate(r, seances)).length
 
-    const patientIds = new Set(filtered.map(r => r.patientId))
+    const seancesPeriode = seances.filter(s => s.date >= debut && s.date <= fin)
+    const cles = new Set<string>()
+    const patientsValides: number[] = []
+    seancesPeriode.forEach(s => {
+      const cle = s.patientId + '_' + s.date
+      if (!cles.has(cle)) { cles.add(cle); patientsValides.push(s.patientId) }
+    })
+
+    const effectues = patientsValides.length
     let hommes = 0, femmes = 0
-    patientIds.forEach(id => {
+    patientsValides.forEach(id => {
       const p = patients.find(pp => pp.id === id)
       if (p?.sexe === 'M') hommes++
       else if (p?.sexe === 'F') femmes++
     })
 
-    return { total, effectues, annules, byType, hommes, femmes }
-  }, [filtered, patients, seances])
+    return { total, effectues, annules, hommes, femmes }
+  }, [filtered, patients, seances, debut, fin])
 
   function navigate(dir: number) {
     const d = new Date(refDate)
@@ -118,12 +123,6 @@ export default function RapportPage() {
     if (periode==='mois')    d.setMonth(d.getMonth()+dir)
     if (periode==='annee')   d.setFullYear(d.getFullYear()+dir)
     setRefDate(d)
-  }
-
-  const TYPE_COLOR: Record<string,string> = {
-    consultation: 'bg-teal-100 text-teal-700 border-teal-300',
-    soin:         'bg-blue-100 text-blue-700 border-blue-300',
-    autre:        'bg-slate-100 text-slate-600 border-slate-300',
   }
 
   const STATUT_STYLE: Record<string,string> = {
@@ -203,23 +202,6 @@ export default function RapportPage() {
           ))}
         </div>
 
-        {/* REPARTITION PAR TYPE */}
-        {Object.keys(stats.byType).length > 0 && (
-          <div className="bg-surface rounded-xl border border-outline-variant p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary">donut_small</span>
-              <h3 className="font-semibold text-on-surface">Répartition par type</h3>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {Object.entries(stats.byType).map(([type, nb]) => (
-                <div key={type} className={'flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold ' + (TYPE_COLOR[type]||TYPE_COLOR.autre)}>
-                  <span className="capitalize">{type}</span>
-                  <span className="bg-white/60 rounded-full px-2 py-0.5 text-xs font-bold">{nb}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
     </AppShell>
