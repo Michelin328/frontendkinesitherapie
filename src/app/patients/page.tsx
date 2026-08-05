@@ -28,7 +28,6 @@ function estExterne(p: Patient) {
 export default function PatientsPage() {
   const { t } = useLanguage()
   const router = useRouter()
-  const [confirmAnnulerRdv, setConfirmAnnulerRdv] = useState<RendezVous | null>(null)
   const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
@@ -86,15 +85,6 @@ export default function PatientsPage() {
   function commencer(rdv: RendezVous) {
     majRdv(rdv.id, { statut: 'en_cours' })
     router.push('/patients/' + rdv.patientId)
-  }
-  function annuler(rdv: RendezVous) {
-    setConfirmAnnulerRdv(rdv)
-    setMenuOpen(null)
-  }
-  function confirmerAnnulation() {
-    if (!confirmAnnulerRdv) return
-    majRdv(confirmAnnulerRdv.id, { statut: 'annule' })
-    setConfirmAnnulerRdv(null)
   }
   function ouvrirDecaler(rdv: RendezVous) {
     setDecalerRdv(rdv)
@@ -208,11 +198,6 @@ export default function PatientsPage() {
                                   <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
                                   Décaler le rendez-vous
                                 </button>
-                                <button onClick={() => annuler(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base">cancel</span>
-                                  Annuler
-                                </button>
                               </>
                             ) : (
                               <p className="px-4 py-3 text-xs text-on-surface-variant italic">Aucun rendez-vous actif</p>
@@ -268,28 +253,6 @@ export default function PatientsPage() {
               </button>
               <button onClick={confirmerDecaler}
                 className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm">
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODALE CONFIRMATION ANNULATION */}
-      {confirmAnnulerRdv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-red-500 text-3xl">cancel</span>
-            </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">Confirmer l'annulation</h3>
-            <p className="text-sm text-on-surface-variant mb-6">Voulez-vous vraiment annuler ce rendez-vous ? Cette action indiquera que le patient n'est pas venu.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmAnnulerRdv(null)}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low">
-                Retour
-              </button>
-              <button onClick={confirmerAnnulation}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 shadow-sm">
                 Confirmer
               </button>
             </div>

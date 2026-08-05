@@ -19,6 +19,18 @@ interface RendezVous {
 
 type Periode = 'jour' | 'semaine' | 'mois' | 'annee'
 
+interface Seance {
+  id: number; patientId: number; date: string;
+}
+
+function estRdvRate(rdv: RendezVous, seances: Seance[]): boolean {
+  if (!rdv.date) return false
+  const now = new Date()
+  const seuil = new Date(rdv.date + 'T21:00:00')
+  if (now < seuil) return false
+  return !seances.some(s => s.patientId === rdv.patientId && s.date === rdv.date)
+}
+
 function toKey(d: Date) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
 }
@@ -32,6 +44,7 @@ export default function RapportPage() {
   const { t } = useLanguage()
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
+  const [seances, setSeances] = useState<Seance[]>([])
 
   useEffect(() => {
     fetch(`${API}/rendezvous`, { cache: 'no-store' })
@@ -45,6 +58,13 @@ export default function RapportPage() {
       .then(r => r.json())
       .then((data: Patient[]) => setPatients(Array.isArray(data) ? data : []))
       .catch(() => setPatients([]))
+  }, [])
+
+  useEffect(() => {
+    fetch(`${API}/seances`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then((data: Seance[]) => setSeances(Array.isArray(data) ? data : []))
+      .catch(() => setSeances([]))
   }, [])
   const [periode, setPeriode] = useState<Periode>('mois')
   const [refDate, setRefDate] = useState(new Date())
@@ -76,7 +96,7 @@ export default function RapportPage() {
   const stats = useMemo(() => {
     const total     = filtered.length
     const effectues = filtered.filter(r => r.statut === 'effectue' || r.statut === 'termine').length
-    const annules   = filtered.filter(r => r.statut === 'annule').length
+    const annules   = filtered.filter(r => estRdvRate(r, seances)).length
     const byType: Record<string,number> = {}
     filtered.forEach(r => { byType[r.type||'autre'] = (byType[r.type||'autre']||0)+1 })
 
@@ -89,7 +109,7 @@ export default function RapportPage() {
     })
 
     return { total, effectues, annules, byType, hommes, femmes }
-  }, [filtered, patients])
+  }, [filtered, patients, seances])
 
   function navigate(dir: number) {
     const d = new Date(refDate)
