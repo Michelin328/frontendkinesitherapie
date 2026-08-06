@@ -178,6 +178,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     const { date } = getNow()
     const heureFinFinale = getHeureActuelle()
     setHeureFin(heureFinFinale)
+    const dateIso = new Date().toISOString().slice(0, 10)
     const nouvelleSeance: SeanceHistorique = { date, heureDebut, heureFin: heureFinFinale, traitement, evolution, conseil }
     const nouvelHistorique = [nouvelleSeance, ...seancesHistorique]
     setSeancesHistorique(nouvelHistorique)
@@ -216,7 +217,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         patientId: Number(params.id),
-        date,
+        date: dateIso,
         heureDebut,
         heureFin: heureFinFinale,
         traitement,
