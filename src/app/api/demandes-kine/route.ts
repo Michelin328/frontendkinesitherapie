@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getDemandesKine } from '@/lib/prescriptionApi';
 import { getAccueilPatient } from '@/lib/accueilApi';
+import { getAuthInfo } from '@/lib/auth-server';
 
 export async function GET() {
   try {
-    const demandes = await getDemandesKine();
+    const { chuId, serviceId } = await getAuthInfo();
+    if (!chuId || !serviceId) {
+      return NextResponse.json(
+        { error: 'Session invalide : chuId ou serviceId manquant.' },
+        { status: 401 },
+      );
+    }
 
+    const demandes = await getDemandesKine(chuId, serviceId);
     const demandesEnrichies = await Promise.all(
       demandes.map(async (d: any) => {
         try {
@@ -16,7 +24,6 @@ export async function GET() {
         }
       }),
     );
-
     return NextResponse.json(demandesEnrichies);
   } catch (error) {
     console.error(error);

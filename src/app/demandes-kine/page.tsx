@@ -1,39 +1,51 @@
-import { getDemandesKine } from '../../lib/prescriptionApi';
-import DemandeCard from './DemandeCard';
+'use client'
 
-export const dynamic = 'force-dynamic';
+import { useEffect, useState } from 'react'
+import AppShell from '@/components/layout/AppShell'
+import DemandeCard from './DemandeCard'
 
-export default async function DemandesKinePage() {
-  let demandes: any[] = [];
-  let erreur: string | null = null;
+export default function DemandesKinePage() {
+  const [demandes, setDemandes] = useState<any[]>([])
+  const [erreur, setErreur] = useState<string | null>(null)
+  const [chargement, setChargement] = useState(true)
 
-  try {
-    demandes = await getDemandesKine();
-  } catch (e: any) {
-    erreur = e?.message ?? 'Erreur inconnue';
-  }
+  useEffect(() => {
+    fetch('/api/demandes-kine', { cache: 'no-store' })
+      .then(async (r) => {
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}))
+          throw new Error(data.error || `Erreur HTTP ${r.status}`)
+        }
+        return r.json()
+      })
+      .then((data) => setDemandes(Array.isArray(data) ? data : []))
+      .catch((e) => setErreur(e?.message ?? 'Erreur inconnue'))
+      .finally(() => setChargement(false))
+  }, [])
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Demandes de kinésithérapie</h1>
-      <p style={{ color: '#555' }}>
-        Planifiez un rendez-vous pour chaque demande reçue : le patient et le
-        rendez-vous seront créés automatiquement.
-      </p>
-
-      {erreur ? (
-        <p style={{ color: 'crimson' }}>
-          Impossible de charger les demandes : {erreur}
+    <AppShell>
+      <div style={{ padding: '2rem' }}>
+        <h1>Demandes de kinésithérapie</h1>
+        <p style={{ color: '#555' }}>
+          Planifiez un rendez-vous pour chaque demande reçue : le patient et le rendez-vous seront créés automatiquement.
         </p>
-      ) : demandes.length === 0 ? (
-        <p>Aucune demande pour le moment.</p>
-      ) : (
-        <div style={{ marginTop: '1rem' }}>
-          {demandes.map((demande: any) => (
-            <DemandeCard key={demande.id} demande={demande} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+        {chargement ? (
+          <p>Chargement...</p>
+        ) : erreur ? (
+          <p style={{ color: 'crimson' }}>
+            Impossible de charger les demandes : {erreur}
+          </p>
+        ) : demandes.length === 0 ? (
+          <p>Aucune demande pour le moment.</p>
+        ) : (
+          <div style={{ marginTop: '1rem' }}>
+            {demandes.map((demande: any) => (
+              <DemandeCard key={demande.id} demande={demande} />
+            ))}
+          </div>
+        )}
+      </div>
+    </AppShell>
+  )
 }

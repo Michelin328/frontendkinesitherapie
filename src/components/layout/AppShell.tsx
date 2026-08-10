@@ -57,6 +57,7 @@ function AppShellInner({
     const serviceIdFromUrl = searchParams.get('serviceId')
     if (tokenFromUrl) {
       localStorage.setItem(TOKEN_KEY, tokenFromUrl)
+      document.cookie = `authToken=${tokenFromUrl}; path=/; SameSite=Lax`
       if (serviceIdFromUrl) { localStorage.setItem('serviceId', serviceIdFromUrl) }
       const url = new URL(window.location.href)
       url.searchParams.delete('accessToken')
