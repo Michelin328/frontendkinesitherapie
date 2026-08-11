@@ -18,9 +18,21 @@ export async function GET() {
       demandes.map(async (d: any) => {
         try {
           const patient = await getAccueilPatient(d.patientId);
-          return { ...d, patientNom: patient.nom, patientPrenom: patient.prenom };
+          return {
+            ...d,
+            patientNom: patient.nom,
+            patientPrenom: patient.prenom,
+            patientDateNaissance: patient.dateNaissance,
+            patientSexe: patient.sexe,
+          };
         } catch {
-          return { ...d, patientNom: null, patientPrenom: null };
+          return {
+            ...d,
+            patientNom: null,
+            patientPrenom: null,
+            patientDateNaissance: null,
+            patientSexe: null,
+          };
         }
       }),
     );

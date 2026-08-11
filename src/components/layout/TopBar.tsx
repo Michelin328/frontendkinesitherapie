@@ -1,10 +1,9 @@
-'use client'
+'use client' 
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
 import { getUtilisateurConnecte } from '@/lib/utilisateur'
-import { planifierRendezVous } from '@/app/demandes-kine/actions'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
@@ -19,7 +18,7 @@ interface NotificationKine {
   urgence: string
   diagnostic: string
   renseignements?: string
-  alertes?: string
+  alertes?: string 
   objectifs?: string
   remarques?: string
   nomMedecinPrescripteur?: string
@@ -40,16 +39,10 @@ interface TopBarProps {
   onBellClick?: () => void
 }
 
-type OptionPlanif = 'maintenant' | '10min' | '20min' | '30min' | 'personnalise'
-
-function pad(n: number) {
-  return String(n).padStart(2, '0')
-}
-
 function jouerCarillon() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const jouerNote = (freq: number, debut: number, duree: number) => {
+    const jouerNote = (freq: number, debut: number, duree: number) => {      
       const osc = ctx.createOscillator()
       const osc2 = ctx.createOscillator()
       const gain = ctx.createGain()
@@ -58,7 +51,8 @@ function jouerCarillon() {
       osc.frequency.value = freq
       osc2.frequency.value = freq * 2.005
       gain.gain.setValueAtTime(0, ctx.currentTime + debut)
-      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + debut + 0.02)
+      gain.gain.setValueAtTime(0, ctx.currentTime + debut) 
+      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + debut + 0.02) 
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + debut + duree)
       osc.connect(gain)
       osc2.connect(gain)
@@ -85,7 +79,7 @@ function styleUrgence(u: string) {
   return { badge: 'bg-teal-100 text-teal-700', bord: 'border-l-teal-400', fond: 'bg-teal-50' }
 }
 
-export default function TopBar({
+export default function TopBar({ 
   searchPlaceholder,
   showSearch = true,
   actions,
@@ -101,19 +95,11 @@ export default function TopBar({
   const router = useRouter()
   const placeholder = searchPlaceholder || t('topbar_rechercher')
 
-  const [utilisateur, setUtilisateur] = useState(getUtilisateurConnecte())
-  const [notifs, setNotifs] = useState<NotificationKine[]>([])
+  const [utilisateur, setUtilisateur] = useState(getUtilisateurConnecte())   
+  const [notifs, setNotifs] = useState<NotificationKine[]>([]) 
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const dernierNombre = useRef<number | null>(null)
-
-  const [demandeActive, setDemandeActive] = useState<NotificationKine | null>(null)
-  const [option, setOption] = useState<OptionPlanif>('maintenant')
-  const [dateChoisie, setDateChoisie] = useState('')
-  const [heureChoisie, setHeureChoisie] = useState('')
-  const [planifiees, setPlanifiees] = useState<Set<number>>(new Set())
-  const [busy, setBusy] = useState(false)
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
 
   function fetchNotifs() {
     fetch(`${API}/notifications`, { cache: 'no-store' })
@@ -131,21 +117,21 @@ export default function TopBar({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {  
         setOpen(false)
-      }
+      } 
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const enAttente = notifs.filter((n) => n.statut === 'CREEE' && !planifiees.has(n.id))
+  const enAttente = notifs.filter((n) => n.statut === 'CREEE')
   const nonLues = enAttente.filter((n) => !n.lue)
 
   const triees = [...enAttente].sort((a, b) => {
     const diff = rangUrgence(a.urgence) - rangUrgence(b.urgence)
     if (diff !== 0) return diff
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() 
   })
 
   useEffect(() => {
@@ -157,7 +143,7 @@ export default function TopBar({
       onNouvelleNotification?.()
     }
     dernierNombre.current = nonLues.length
-  }, [nonLues.length])
+  }, [nonLues.length]) 
 
   function formatDateHeure(iso: string) {
     const dt = new Date(iso)
@@ -168,85 +154,23 @@ export default function TopBar({
 
   function marquerLue(n: NotificationKine) {
     if (!n.lue) {
-      fetch(`${API}/notifications/${n.id}/lire`, { method: 'PATCH' })
+      fetch(`${API}/notifications/${n.id}/lire`, { method: 'PATCH' })        
         .then(() => fetchNotifs())
         .catch(() => {})
     }
   }
 
-  function ouvrirPlanification(n: NotificationKine) {
+  function allerVersPrescription(n: NotificationKine) {
     marquerLue(n)
-    setDemandeActive(n)
-    setOption('maintenant')
-    setFeedback(null)
-    const maintenant = new Date()
-    setDateChoisie(maintenant.toISOString().slice(0, 10))
-    setHeureChoisie(maintenant.toTimeString().slice(0, 5))
+    setOpen(false)
+    router.push('/prescriptions')
   }
-
-  function fermerModale() {
-    setDemandeActive(null)
-  }
-
-  function calculerDateRdv(): Date {
-    const maintenant = new Date()
-    if (option === '10min') return new Date(maintenant.getTime() + 10 * 60000)
-    if (option === '20min') return new Date(maintenant.getTime() + 20 * 60000)
-    if (option === '30min') return new Date(maintenant.getTime() + 30 * 60000)
-    if (option === 'personnalise') return new Date(dateChoisie + 'T' + heureChoisie)
-    return maintenant
-  }
-
-  async function confirmerPlanification() {
-    if (!demandeActive) return
-    const dateRdv = calculerDateRdv()
-    const date = `${dateRdv.getFullYear()}-${pad(dateRdv.getMonth() + 1)}-${pad(dateRdv.getDate())}`
-    const heureDebut = `${pad(dateRdv.getHours())}:${pad(dateRdv.getMinutes())}`
-    const heureFin = `${pad((dateRdv.getHours() + 1) % 24)}:${pad(dateRdv.getMinutes())}`
-
-    setBusy(true)
-    setFeedback(null)
-    const res = await planifierRendezVous({
-      prescriptionId: demandeActive.prescriptionId,
-      demandeId: demandeActive.demandeId,
-      patientId: demandeActive.patientId,
-      diagnostic: demandeActive.diagnostic,
-      renseignements: demandeActive.renseignements,
-      typeKine: demandeActive.typeKine,
-      urgence: demandeActive.urgence,
-      alertes: demandeActive.alertes,
-      objectifs: demandeActive.objectifs,
-      remarques: demandeActive.remarques,
-      nomMedecinPrescripteur: demandeActive.nomMedecinPrescripteur,
-      date,
-      heureDebut,
-      heureFin,
-      type: 'soin',
-      motif: demandeActive.diagnostic || demandeActive.typeKine || 'Séance de kinésithérapie',
-    })
-    setBusy(false)
-    setFeedback(res)
-
-    if (res.ok) {
-      fetch(`${API}/notifications/${demandeActive.id}/planifiee`, { method: 'PATCH' }).catch(() => {})
-      setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
-      setDemandeActive(null)
-    }
-  }
-
-  const OPTIONS: { valeur: OptionPlanif; label: string }[] = [
-    { valeur: 'maintenant', label: 'Maintenant' },
-    { valeur: '10min', label: 'Apres 10 min' },
-    { valeur: '20min', label: 'Apres 20 min' },
-    { valeur: '30min', label: 'Apres 30 min' },
-    { valeur: 'personnalise', label: 'Personnalise' },
-  ]
 
   return (
     <header className="sticky top-0 z-40 w-full h-16 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-4 md:px-8 flex justify-between items-center gap-3">
       <button onClick={onMenuClick} className="lg:hidden text-on-surface-variant hover:text-primary flex-shrink-0">
         <span className="material-symbols-outlined">menu</span>
-      </button>
+      </button> 
       {showSearch && (
         <div className="hidden sm:flex items-center gap-3 bg-surface-container-low px-4 py-2 rounded-full w-full max-w-xs md:max-w-sm lg:w-96">
           <span className="material-symbols-outlined text-on-surface-variant text-base">search</span>
@@ -258,7 +182,7 @@ export default function TopBar({
         </div>
       )}
       {!showSearch && <div />}
-      <div className="flex items-center gap-3 md:gap-6">
+      <div className="flex items-center gap-3 md:gap-6"> 
         {actions}
 
         <button
@@ -266,27 +190,27 @@ export default function TopBar({
           title={previewTitre}
           className={'transition-colors ' + (previewMode !== 'desktop' ? 'text-primary' : 'text-on-surface-variant hover:text-primary')}
         >
-          <span className="material-symbols-outlined">{previewIcon}</span>
+          <span className="material-symbols-outlined">{previewIcon}</span>   
         </button>
 
         <div className="relative" ref={menuRef}>
           <button onClick={() => { setOpen((o) => !o); onBellClick?.() }} className="relative text-on-surface-variant hover:text-primary transition-colors">
-            <span className="material-symbols-outlined">notifications</span>
+            <span className="material-symbols-outlined">notifications</span> 
             {nonLues.length > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-error rounded-full text-[10px] text-white flex items-center justify-center font-bold animate-pulse">
-                {nonLues.length}
+                {nonLues.length} 
               </span>
             )}
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-3 w-96 max-h-[460px] overflow-y-auto bg-surface rounded-xl border border-outline-variant shadow-xl z-50">
+            <div className="absolute right-0 mt-3 w-96 max-h-[460px] overflow-y-auto bg-surface rounded-xl border border-outline-variant shadow-xl z-50"> 
               <div className="px-4 py-3 border-b border-outline-variant sticky top-0 bg-surface">
                 <p className="font-semibold text-on-surface text-sm mb-2">Notifications ({nonLues.length})</p>
               </div>
               {triees.length === 0 ? (
                 <div className="py-8 text-center text-on-surface-variant text-sm">
-                  Aucune notification en attente
+                  Aucune notification en attente 
                 </div>
               ) : (
                 triees.map((n) => {
@@ -294,10 +218,10 @@ export default function TopBar({
                   return (
                     <div
                       key={n.id}
-                      onClick={() => marquerLue(n)}
+                      onClick={() => allerVersPrescription(n)}
                       className={
                         'px-4 py-3 border-b border-outline-variant last:border-b-0 transition-colors border-l-4 cursor-pointer ' +
-                        (n.lue ? 'bg-surface hover:bg-surface-container-low/50 border-l-outline-variant' : s.fond + ' hover:brightness-95 ' + s.bord)
+                        (n.lue ? 'bg-surface hover:bg-surface-container-low/50 border-l-outline-variant' : s.fond + ' hover:brightness-95 ' + s.bord)     
                       }
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -315,13 +239,10 @@ export default function TopBar({
                           <span className="material-symbols-outlined text-[13px]">call_made</span>
                           Provenance : Prescription
                         </p>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); ouvrirPlanification(n) }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-90 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-xs">event_available</span>
-                          Planifier
-                        </button>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                          Voir
+                          <span className="material-symbols-outlined text-sm">chevron_right</span>
+                        </span>
                       </div>
                     </div>
                   )
@@ -332,7 +253,7 @@ export default function TopBar({
         </div>
 
         <button className="text-on-surface-variant hover:text-primary transition-colors">
-          <span className="material-symbols-outlined">help_outline</span>
+          <span className="material-symbols-outlined">help_outline</span>    
         </button>
         <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-outline-variant">
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -343,67 +264,6 @@ export default function TopBar({
           </div>
         </div>
       </div>
-
-      {demandeActive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-primary">event_available</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">Planifier le rendez-vous</h3>
-                <p className="text-xs text-on-surface-variant">{demandeActive.patientNom && demandeActive.patientPrenom ? `${demandeActive.patientPrenom} ${demandeActive.patientNom}` : 'Patient inconnu'} — {demandeActive.typeKine}</p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2">
-              {OPTIONS.map((opt) => (
-                <button key={opt.valeur} onClick={() => setOption(opt.valeur)}
-                  className={'w-full text-left px-4 py-3 rounded-lg border text-sm font-semibold transition-colors flex items-center justify-between ' +
-                    (option === opt.valeur
-                      ? 'bg-primary/10 border-primary text-primary'
-                      : 'border-outline-variant text-on-surface hover:bg-surface-container-low')}>
-                  {opt.label}
-                  {option === opt.valeur && <span className="material-symbols-outlined text-lg">check_circle</span>}
-                </button>
-              ))}
-            </div>
-
-            {option === 'personnalise' && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Date</label>
-                  <input type="date" value={dateChoisie} onChange={(e) => setDateChoisie(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Heure</label>
-                  <input type="time" value={heureChoisie} onChange={(e) => setHeureChoisie(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-                </div>
-              </div>
-            )}
-
-            {feedback && (
-              <p className={'mt-3 text-sm font-semibold ' + (feedback.ok ? 'text-green-600' : 'text-red-600')}>
-                {feedback.message}
-              </p>
-            )}
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={fermerModale} disabled={busy}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low disabled:opacity-50">
-                Annuler
-              </button>
-              <button onClick={confirmerPlanification} disabled={busy}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm disabled:opacity-50">
-                {busy ? 'Planification…' : 'Confirmer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   )
 }
