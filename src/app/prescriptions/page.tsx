@@ -55,6 +55,17 @@ function labelSexe(sexe?: string | null) {
 
 const TYPES_RDV = ['consultation', 'soin', 'bilan', 'exercice']
 
+function creneauDansMinutes(minutes: number) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const debut = new Date(Date.now() + minutes * 60000)
+  const fin = new Date(debut.getTime() + 30 * 60000)
+  return {
+    date: `${debut.getFullYear()}-${pad(debut.getMonth() + 1)}-${pad(debut.getDate())}`,
+    heureDebut: `${pad(debut.getHours())}:${pad(debut.getMinutes())}`,
+    heureFin: `${pad(fin.getHours())}:${pad(fin.getMinutes())}`,
+  }
+}
+
 export default function PrescriptionsPage() {
   const [demandes, setDemandes] = useState<DemandePrescription[]>([])
   const [chargement, setChargement] = useState(true)
@@ -62,6 +73,10 @@ export default function PrescriptionsPage() {
   const [recherche, setRecherche] = useState('')
   const [filtreUrgence, setFiltreUrgence] = useState<FiltreUrgence>('TOUS')
   const [planifiees, setPlanifiees] = useState<Set<string>>(new Set())
+
+  const [menuOuvert, setMenuOuvert] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [feedbackParId, setFeedbackParId] = useState<Record<string, { ok: boolean; message: string }>>({})
 
   const [demandeActive, setDemandeActive] = useState<DemandePrescription | null>(null)
   const [date, setDate] = useState('')
@@ -111,7 +126,38 @@ export default function PrescriptionsPage() {
     })
   }, [demandes, filtreUrgence, recherche, planifiees])
 
+  async function planifierRapide(d: DemandePrescription, minutes: number) {
+    setMenuOuvert(null)
+    setBusyId(d.id)
+    setFeedbackParId((prev) => ({ ...prev, [d.id]: undefined as any }))
+    const creneau = creneauDansMinutes(minutes)
+    const res = await planifierRendezVous({
+      prescriptionId: d.id,
+      demandeId: d.id,
+      patientId: d.patientId,
+      diagnostic: d.diagnostic,
+      renseignements: d.renseignements,
+      urgence: d.urgence,
+      alertes: d.alertes,
+      objectifs: d.objectifs,
+      remarques: d.remarques,
+      nomMedecinPrescripteur: d.nomMedecinPrescripteur,
+      date: creneau.date,
+      heureDebut: creneau.heureDebut,
+      heureFin: creneau.heureFin,
+      type: 'soin',
+      motif: d.diagnostic || d.renseignements || 'Séance de kinésithérapie',
+    })
+    setBusyId(null)
+    if (res.ok) {
+      setPlanifiees((prev) => new Set(prev).add(d.id))
+    } else {
+      setFeedbackParId((prev) => ({ ...prev, [d.id]: res }))
+    }
+  }
+
   function ouvrirPlanification(d: DemandePrescription) {
+    setMenuOuvert(null)
     setDemandeActive(d)
     setFeedback(null)
     const auj = new Date()
@@ -172,7 +218,6 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
-      {/* BARRE DE RECHERCHE + FILTRES */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex items-center gap-3 bg-surface border border-outline-variant px-4 py-2 rounded-lg flex-1 max-w-md">
           <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
@@ -207,7 +252,6 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
-      {/* LISTE */}
       {chargement ? (
         <div className="py-12 text-center text-on-surface-variant">Chargement des prescriptions…</div>
       ) : erreur ? (
@@ -218,45 +262,106 @@ export default function PrescriptionsPage() {
           <p>Aucune prescription en attente pour le moment.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtrees.map((d) => {
-            const s = styleUrgence(d.urgence)
-            const nomComplet = d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
-            return (
-              <div key={d.id} className={'bg-surface rounded-xl border border-outline-variant shadow-sm border-l-4 p-4 ' + s.bord}>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>{d.urgence}</span>
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px]">call_made</span>
-                        {libelleService(d.serviceIdSource)}
-                      </span>
-                    </div>
-                    <p className="font-semibold text-on-surface">{nomComplet}</p>
-                    <p className="text-xs text-on-surface-variant mb-1">
-                      {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
-                    </p>
-                    <p className="text-sm text-on-surface-variant truncate max-w-xl">
-                      {d.diagnostic || 'Diagnostic non renseigné'}
-                      {d.renseignements ? ` — ${d.renseignements}` : ''}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => ouvrirPlanification(d)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors flex-shrink-0"
-                  >
-                    <span className="material-symbols-outlined text-base">event_available</span>
-                    Planifier RDV
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+        <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-visible">
+          <div className="overflow-x-auto md:overflow-visible">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-outline-variant bg-surface-container-low/50">
+                  <th className="table-header">Informations du patient</th>
+                  <th className="table-header text-center">État</th>
+                  <th className="table-header">Diagnostic</th>
+                  <th className="table-header text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrees.map((d) => {
+                  const s = styleUrgence(d.urgence)
+                  const nomComplet =
+                    d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
+                  const enCours = busyId === d.id
+                  const fb = feedbackParId[d.id]
+                  return (
+                    <tr key={d.id} className={'hover:bg-surface-container-low/50 transition-colors border-l-4 ' + s.bord}>
+                      <td className="table-cell">
+                        <p className="font-semibold text-on-surface">{nomComplet}</p>
+                        <p className="text-xs text-on-surface-variant">
+                          {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
+                        </p>
+                        <p className="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px]">call_made</span>
+                          {libelleService(d.serviceIdSource)}
+                        </p>
+                      </td>
+                      <td className="table-cell text-center">
+                        <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>{d.urgence}</span>
+                      </td>
+                      <td className="table-cell">
+                        <p className="text-sm text-gray-500 max-w-[280px] truncate">
+                          {d.diagnostic || 'Diagnostic non renseigné'}
+                          {d.renseignements ? ` — ${d.renseignements}` : ''}
+                        </p>
+                      </td>
+                      <td className="table-cell text-center relative">
+                        <button
+                          onClick={() => setMenuOuvert(menuOuvert === d.id ? null : d.id)}
+                          disabled={enCours}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-base">event_available</span>
+                          {enCours ? 'Planification…' : 'Planifier'}
+                          {!enCours && <span className="material-symbols-outlined text-sm">expand_more</span>}
+                        </button>
+
+                        {menuOuvert === d.id && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setMenuOuvert(null)} />
+                            <div className="absolute right-4 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
+                              <button
+                                onClick={() => planifierRapide(d, 10)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
+                              >
+                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
+                                Après 10 min
+                              </button>
+                              <button
+                                onClick={() => planifierRapide(d, 20)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
+                              >
+                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
+                                Après 20 min
+                              </button>
+                              <button
+                                onClick={() => planifierRapide(d, 30)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
+                              >
+                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
+                                Après 30 min
+                              </button>
+                              <div className="border-t border-outline-variant" />
+                              <button
+                                onClick={() => ouvrirPlanification(d)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
+                              >
+                                <span className="material-symbols-outlined text-base text-primary">tune</span>
+                                Personnaliser
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {fb && !fb.ok && (
+                          <p className="text-[11px] text-red-600 mt-1 max-w-[180px] ml-auto">{fb.message}</p>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* MODALE PLANIFICATION */}
       {demandeActive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
