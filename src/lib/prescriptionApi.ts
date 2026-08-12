@@ -32,12 +32,11 @@ export async function getDemandesKine(chuId: string, serviceId: string) {
 // Met à jour le statut d'une demande de kiné (best-effort : renvoie l'info au
 // service prescription une fois le rendez-vous planifié).
 export async function updateDemandeStatut(
-  prescriptionId: string,
-  demandeId: string,
+  id: string,
   statut: string,
   motif?: string,
 ) {
-  const url = `${process.env.PRESCRIPTION_API_URL}/kine/${prescriptionId}/demandes/${demandeId}/statut`;
+  const url = `${process.env.PRESCRIPTION_API_URL}/kine/${id}/statut`;
 
   const response = await fetch(url, {
     method: 'PATCH',

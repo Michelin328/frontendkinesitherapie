@@ -81,7 +81,6 @@ export async function planifierRendezVous(
     try {
       await updateDemandeStatut(
         input.prescriptionId,
-        input.demandeId,
         'PLANIFIEE',
       )
     } catch (e) {
