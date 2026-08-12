@@ -33,10 +33,13 @@ function rangUrgence(u: string) {
   return 2
 }
 
+// Couleurs par urgence : badge (carte) + entête (modale)
 function styleUrgence(u: string) {
-  if (u === 'TRES_URGENT') return { badge: 'bg-red-100 text-red-700', bord: 'border-l-red-500' }
-  if (u === 'URGENT') return { badge: 'bg-orange-100 text-orange-700', bord: 'border-l-orange-400' }
-  return { badge: 'bg-teal-100 text-teal-700', bord: 'border-l-teal-400' }
+  if (u === 'TRES_URGENT')
+    return { badge: 'bg-red-100 text-red-700', bord: 'border-l-red-500', entete: 'bg-red-50', accent: 'text-red-700' }
+  if (u === 'URGENT')
+    return { badge: 'bg-orange-100 text-orange-700', bord: 'border-l-orange-400', entete: 'bg-orange-50', accent: 'text-orange-700' }
+  return { badge: 'bg-teal-100 text-teal-700', bord: 'border-l-teal-400', entete: 'bg-teal-50', accent: 'text-teal-700' }
 }
 
 function formatDate(iso?: string | null) {
@@ -75,6 +78,13 @@ function creneauDansMinutes(minutes: number) {
   }
 }
 
+const OPTIONS_DELAI: { valeur: ChoixDelai; label: string }[] = [
+  { valeur: '10', label: 'Après 10 min' },
+  { valeur: '20', label: 'Après 20 min' },
+  { valeur: '30', label: 'Après 30 min' },
+  { valeur: 'perso', label: 'Personnaliser' },
+]
+
 export default function PrescriptionsPage() {
   const [demandes, setDemandes] = useState<DemandePrescription[]>([])
   const [chargement, setChargement] = useState(true)
@@ -83,13 +93,13 @@ export default function PrescriptionsPage() {
   const [filtreUrgence, setFiltreUrgence] = useState<FiltreUrgence>('TOUS')
   const [planifiees, setPlanifiees] = useState<Set<string>>(new Set())
 
-  // Carte de planification (ouverte pour une seule demande à la fois)
-  const [panneauOuvert, setPanneauOuvert] = useState<string | null>(null)
+  // Modale de planification (centrée, fond flou)
+  const [demandeActive, setDemandeActive] = useState<DemandePrescription | null>(null)
   const [choix, setChoix] = useState<ChoixDelai | null>(null)
   const [dateP, setDateP] = useState('')
   const [heureP, setHeureP] = useState('09:00')
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [feedbackParId, setFeedbackParId] = useState<Record<string, { ok: boolean; message: string } | undefined>>({})
+  const [busy, setBusy] = useState(false)
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
 
   function chargerDemandes() {
     setChargement(true)
@@ -130,52 +140,55 @@ export default function PrescriptionsPage() {
     })
   }, [demandes, filtreUrgence, recherche, planifiees])
 
-  function ouvrirPanneau(d: DemandePrescription) {
-    setPanneauOuvert(d.id)
+  function ouvrirModale(d: DemandePrescription) {
+    setDemandeActive(d)
     setChoix(null)
+    setFeedback(null)
     const auj = new Date()
     setDateP(auj.toISOString().slice(0, 10))
     setHeureP('09:00')
-    setFeedbackParId((prev) => ({ ...prev, [d.id]: undefined }))
   }
 
-  function fermerPanneau() {
-    setPanneauOuvert(null)
+  function fermerModale() {
+    if (busy) return
+    setDemandeActive(null)
     setChoix(null)
   }
 
-  async function confirmerPlanification(d: DemandePrescription) {
-    if (!choix) return
-    setBusyId(d.id)
+  async function confirmerPlanification() {
+    if (!demandeActive || !choix) return
+    setBusy(true)
+    setFeedback(null)
     const creneau =
       choix === 'perso'
         ? { date: dateP, heureDebut: heureP, heureFin: ajouterMinutes(heureP, 30) }
         : creneauDansMinutes(Number(choix))
 
     const res = await planifierRendezVous({
-      prescriptionId: d.id,
-      demandeId: d.id,
-      patientId: d.patientId,
-      diagnostic: d.diagnostic,
-      renseignements: d.renseignements,
-      urgence: d.urgence,
-      alertes: d.alertes,
-      objectifs: d.objectifs,
-      remarques: d.remarques,
-      nomMedecinPrescripteur: d.nomMedecinPrescripteur,
+      prescriptionId: demandeActive.id,
+      demandeId: demandeActive.id,
+      patientId: demandeActive.patientId,
+      diagnostic: demandeActive.diagnostic,
+      renseignements: demandeActive.renseignements,
+      urgence: demandeActive.urgence,
+      alertes: demandeActive.alertes,
+      objectifs: demandeActive.objectifs,
+      remarques: demandeActive.remarques,
+      nomMedecinPrescripteur: demandeActive.nomMedecinPrescripteur,
       date: creneau.date,
       heureDebut: creneau.heureDebut,
       heureFin: creneau.heureFin,
       type: 'soin',
-      motif: d.diagnostic || d.renseignements || 'Séance de kinésithérapie',
+      motif: demandeActive.diagnostic || demandeActive.renseignements || 'Séance de kinésithérapie',
     })
-    setBusyId(null)
+    setBusy(false)
+    setFeedback(res)
     if (res.ok) {
-      setPlanifiees((prev) => new Set(prev).add(d.id))
-      setPanneauOuvert(null)
-      setChoix(null)
-    } else {
-      setFeedbackParId((prev) => ({ ...prev, [d.id]: res }))
+      setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
+      setTimeout(() => {
+        setDemandeActive(null)
+        setChoix(null)
+      }, 700)
     }
   }
 
@@ -186,12 +199,11 @@ export default function PrescriptionsPage() {
     { valeur: 'NORMAL', label: 'Normal' },
   ]
 
-  const OPTIONS_DELAI: { valeur: ChoixDelai; label: string }[] = [
-    { valeur: '10', label: 'Après 10 min' },
-    { valeur: '20', label: 'Après 20 min' },
-    { valeur: '30', label: 'Après 30 min' },
-    { valeur: 'perso', label: 'Personnaliser' },
-  ]
+  const sActive = demandeActive ? styleUrgence(demandeActive.urgence) : null
+  const nomActif =
+    demandeActive?.patientPrenom && demandeActive?.patientNom
+      ? `${demandeActive.patientPrenom} ${demandeActive.patientNom}`
+      : 'Patient non identifié'
 
   return (
     <AppShell showSearch={false}>
@@ -237,7 +249,7 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
-      {/* LISTE DE CARTES (sans en-tête de tableau) */}
+      {/* LISTE DE CARTES ALIGNÉES EN 4 COLONNES */}
       {chargement ? (
         <div className="py-12 text-center text-on-surface-variant">Chargement des prescriptions…</div>
       ) : erreur ? (
@@ -253,113 +265,124 @@ export default function PrescriptionsPage() {
             const s = styleUrgence(d.urgence)
             const nomComplet =
               d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
-            const enCours = busyId === d.id
-            const fb = feedbackParId[d.id]
-            const panneauActif = panneauOuvert === d.id
 
             return (
               <div key={d.id} className={'bg-surface rounded-xl border border-outline-variant shadow-sm border-l-4 p-4 ' + s.bord}>
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>{d.urgence}</span>
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px]">call_made</span>
-                        {libelleService(d.serviceIdSource)}
-                      </span>
-                    </div>
+                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                  <div className="md:flex-[2] min-w-0">
                     <p className="font-semibold text-on-surface">{nomComplet}</p>
-                    <p className="text-xs text-on-surface-variant mb-1">
+                    <p className="text-xs text-on-surface-variant">
                       {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
                     </p>
-                    <p className="text-sm text-gray-500 truncate max-w-xl">
-                      {d.diagnostic || 'Diagnostic non renseigné'}
+                  </div>
+
+                  <div className="md:flex-1 md:text-center flex-shrink-0">
+                    <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>
+                      {d.urgence.toLowerCase()}
+                    </span>
+                  </div>
+
+                  <div className="md:flex-[2] min-w-0">
+                    <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Diagnostic :</p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {d.diagnostic || 'Non renseigné'}
                       {d.renseignements ? ` — ${d.renseignements}` : ''}
                     </p>
                   </div>
 
-                  <div className="relative flex-shrink-0">
+                  <div className="md:flex-shrink-0">
                     <button
-                      onClick={() => (panneauActif ? fermerPanneau() : ouvrirPanneau(d))}
-                      disabled={enCours}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-50"
+                      onClick={() => ouvrirModale(d)}
+                      className="w-full md:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors"
                     >
                       <span className="material-symbols-outlined text-base">event_available</span>
-                      {enCours ? 'Planification…' : 'Planifier'}
+                      Planifier
                     </button>
-
-                    {panneauActif && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={fermerPanneau} />
-                        <div className="absolute right-0 z-50 mt-2 w-72 bg-surface rounded-xl border border-outline-variant shadow-2xl p-4 text-left">
-                          <p className="text-sm font-bold text-on-surface mb-3">Planifier le rendez-vous</p>
-
-                          <div className="grid grid-cols-2 gap-2 mb-3">
-                            {OPTIONS_DELAI.map((opt) => (
-                              <button
-                                key={opt.valeur}
-                                onClick={() => setChoix(opt.valeur)}
-                                className={
-                                  'px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ' +
-                                  (choix === opt.valeur
-                                    ? 'bg-primary text-white border-primary'
-                                    : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container-low')
-                                }
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          {choix === 'perso' && (
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant mb-1 block">Date</label>
-                                <input
-                                  type="date"
-                                  value={dateP}
-                                  onChange={(e) => setDateP(e.target.value)}
-                                  className="w-full px-2 py-1.5 rounded-lg border border-outline-variant text-xs bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[11px] font-semibold text-on-surface-variant mb-1 block">Heure</label>
-                                <input
-                                  type="time"
-                                  value={heureP}
-                                  onChange={(e) => setHeureP(e.target.value)}
-                                  className="w-full px-2 py-1.5 rounded-lg border border-outline-variant text-xs bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {fb && !fb.ok && <p className="text-[11px] text-red-600 mb-2">{fb.message}</p>}
-
-                          <div className="flex gap-2">
-                            <button
-                              onClick={fermerPanneau}
-                              disabled={enCours}
-                              className="flex-1 px-3 py-2 rounded-lg border border-outline-variant text-on-surface text-xs font-semibold hover:bg-surface-container-low disabled:opacity-50"
-                            >
-                              Annuler
-                            </button>
-                            <button
-                              onClick={() => confirmerPlanification(d)}
-                              disabled={!choix || enCours}
-                              className="flex-1 px-3 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 disabled:opacity-50"
-                            >
-                              {enCours ? 'Confirmation…' : 'Confirmer'}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* MODALE CENTRÉE DE PLANIFICATION */}
+      {demandeActive && sActive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className={'px-6 pt-5 pb-4 ' + sActive.entete}>
+              <h3 className="text-lg font-bold text-on-surface">Planifier le rendez-vous</h3>
+              <p className={'text-sm font-semibold mt-1 ' + sActive.accent}>{nomActif}</p>
+            </div>
+
+            <div className="p-6 pt-4">
+              <div className="space-y-2 mb-4">
+                {OPTIONS_DELAI.map((opt) => (
+                  <button
+                    key={opt.valeur}
+                    onClick={() => setChoix(opt.valeur)}
+                    className={
+                      'w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ' +
+                      (choix === opt.valeur
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-surface text-on-surface border-outline-variant hover:bg-surface-container-low')
+                    }
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {opt.valeur === 'perso' ? 'tune' : 'schedule'}
+                    </span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {choix === 'perso' && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Date</label>
+                    <input
+                      type="date"
+                      value={dateP}
+                      onChange={(e) => setDateP(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Heure</label>
+                    <input
+                      type="time"
+                      value={heureP}
+                      onChange={(e) => setHeureP(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {feedback && (
+                <p className={'text-sm font-semibold mb-3 ' + (feedback.ok ? 'text-green-600' : 'text-red-600')}>
+                  {feedback.message}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={fermerModale}
+                  disabled={busy}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmerPlanification}
+                  disabled={!choix || busy}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm disabled:opacity-50"
+                >
+                  {busy ? 'Planification…' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </AppShell>
