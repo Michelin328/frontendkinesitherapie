@@ -84,8 +84,9 @@ export async function planifierRendezVous(
         input.demandeId,
         'PLANIFIEE',
       )
-    } catch {
-      // non bloquant : le RDV local est déjà créé
+    } catch (e) {
+      // non bloquant : le RDV local est déjà créé, mais on log l'échec pour diagnostiquer
+      console.error('[planifierRendezVous] Échec updateDemandeStatut:', e)
     }
 
     // Rafraîchir les pages concernées.
