@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import { useLanguage } from '@/context/LanguageContext'
@@ -49,7 +48,6 @@ export default function PatientsPage() {
       .catch(() => setRdvs([]))
   }, [])
 
-  // Rendez-vous actif (non annulé) le plus proche pour un patient donné.
   function rdvDuPatient(patientId: number): RendezVous | undefined {
     return rdvs
       .filter(r => r.patientId === patientId)
@@ -111,7 +109,6 @@ export default function PatientsPage() {
         </div>
       </div>
 
-      {/* BARRE DE RECHERCHE */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex items-center gap-3 bg-surface border border-outline-variant px-4 py-2 rounded-lg flex-1 max-w-md">
           <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
@@ -126,105 +123,88 @@ export default function PatientsPage() {
         </div>
       </div>
 
-      {/* TABLEAU */}
-      <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-visible">
-        <div className="overflow-x-auto md:overflow-visible">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                <th className="table-header bg-slate-50">{t('pat_colPatient')}</th>
-                <th className="table-header bg-amber-50">Diagnostic</th>
-                <th className="table-header text-center">Type</th>
-                <th className="table-header text-center bg-sky-50">Détails</th>
-                <th className="table-header bg-violet-50">Dernière visite</th>
-                <th className="table-header text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => {
-                const rdv = rdvDuPatient(p.id)
-                return (
-                  <tr key={p.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="table-cell bg-slate-100">
-                      <div>
-                        <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
-                        <p className="text-xs text-on-surface-variant">
-                          {p.dateNaissance} {p.sexe ? '- ' + (p.sexe === 'M' ? t('cal_homme') : t('cal_femme')) : ''}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="table-cell bg-amber-100">
-                      <p className="text-sm text-on-surface max-w-[220px] truncate">{p.diagnostic || '-'}</p>
-                    </td>
-                    <td className="table-cell text-center">
-                      <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (estExterne(p) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
-                        {estExterne(p) ? 'Externe' : 'Interne'}
-                      </span>
-                    </td>
-                    <td className="table-cell text-center bg-sky-100">
-                      <button onClick={() => setDetailsPatient(p)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
-                        Détails
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                      </button>
-                    </td>
-                    <td className="table-cell text-xs bg-violet-100">
-                      <span className="text-on-surface-variant">
-                        {p.dateDerniereVisite || '-'}
-                      </span>
-                    </td>
-                    <td className="table-cell text-center relative">
-                      <button
-                        onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Action
-                        <span className="material-symbols-outlined text-sm">expand_more</span>
-                      </button>
-
-                      {menuOpen === p.id && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
-                          <div className="absolute right-4 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
-                            {rdv ? (
-                              <>
-                                <button onClick={() => commencer(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base text-emerald-600">play_circle</span>
-                                  Commencer
-                                </button>
-                                <button onClick={() => ouvrirDecaler(rdv)}
-                                  className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
-                                  <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
-                                  Décaler le rendez-vous
-                                </button>
-                              </>
-                            ) : (
-                              <p className="px-4 py-3 text-xs text-on-surface-variant italic">Aucun rendez-vous actif</p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="py-12 text-center text-on-surface-variant">
-              <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
-              <p className="mb-4">{t('pat_aucunTrouve')}</p>
-              <button onClick={() => setSearch('')}
-                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">
-                {t('pat_voirTousPatients')}
-              </button>
-            </div>
-          )}
+      {filtered.length === 0 ? (
+        <div className="py-12 text-center text-on-surface-variant bg-surface rounded-xl border border-outline-variant">
+          <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
+          <p className="mb-4">{t('pat_aucunTrouve')}</p>
+          <button onClick={() => setSearch('')}
+            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">
+            {t('pat_voirTousPatients')}
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(p => {
+            const rdv = rdvDuPatient(p.id)
+            return (
+              <div key={p.id} className="bg-surface rounded-xl border border-outline-variant shadow-sm p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
+                  <div className="min-w-0 md:w-52 md:flex-shrink-0">
+                    <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
+                    <p className="text-xs text-on-surface-variant">
+                      {p.dateNaissance} {p.sexe ? '- ' + (p.sexe === 'M' ? t('cal_homme') : t('cal_femme')) : ''}
+                    </p>
+                  </div>
 
-      {/* MODALE DÉCALER LE RENDEZ-VOUS */}
+                  <div className="md:flex-shrink-0">
+                    <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (estExterne(p) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
+                      {estExterne(p) ? 'Externe' : 'Interne'}
+                    </span>
+                  </div>
+
+                  <div className="md:flex-shrink-0">
+                    <button onClick={() => setDetailsPatient(p)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
+                      Détails
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+                  </div>
+
+                  <div className="md:flex-shrink-0 md:w-32">
+                    <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Dernière visite</p>
+                    <p className="text-xs text-on-surface-variant">{p.dateDerniereVisite || '-'}</p>
+                  </div>
+
+                  <div className="relative md:flex-shrink-0">
+                    <button
+                      onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Action
+                      <span className="material-symbols-outlined text-sm">expand_more</span>
+                    </button>
+
+                    {menuOpen === p.id && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
+                        <div className="absolute right-0 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
+                          {rdv ? (
+                            <>
+                              <button onClick={() => commencer(rdv)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base text-emerald-600">play_circle</span>
+                                Commencer
+                              </button>
+                              <button onClick={() => ouvrirDecaler(rdv)}
+                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
+                                Décaler le rendez-vous
+                              </button>
+                            </>
+                          ) : (
+                            <p className="px-4 py-3 text-xs text-on-surface-variant italic">Aucun rendez-vous actif</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {decalerRdv && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
@@ -259,7 +239,7 @@ export default function PatientsPage() {
           </div>
         </div>
       )}
-      {/* MODALE DETAILS PRESCRIPTION */}
+
       {detailsPatient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto">
