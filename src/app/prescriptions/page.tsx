@@ -268,21 +268,21 @@ export default function PrescriptionsPage() {
 
             return (
               <div key={d.id} className={'bg-surface rounded-xl border border-outline-variant shadow-sm border-l-4 p-4 ' + s.bord}>
-                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-                  <div className="md:flex-[2] min-w-0">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(160px,220px)_110px_minmax(0,1fr)_140px] items-center gap-x-6 gap-y-2">
+                  <div className="min-w-0">
                     <p className="font-semibold text-on-surface">{nomComplet}</p>
                     <p className="text-xs text-on-surface-variant">
                       {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
                     </p>
                   </div>
 
-                  <div className="md:flex-1 md:text-center flex-shrink-0">
+                  <div className="text-left md:text-center">
                     <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>
                       {d.urgence.toLowerCase()}
                     </span>
                   </div>
 
-                  <div className="md:flex-[2] min-w-0">
+                  <div className="min-w-0">
                     <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Diagnostic :</p>
                     <p className="text-sm text-gray-500 truncate">
                       {d.diagnostic || 'Non renseigné'}
@@ -290,7 +290,7 @@ export default function PrescriptionsPage() {
                     </p>
                   </div>
 
-                  <div className="md:flex-shrink-0">
+                  <div className="justify-self-start md:justify-self-end">
                     <button
                       onClick={() => ouvrirModale(d)}
                       className="w-full md:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors"
