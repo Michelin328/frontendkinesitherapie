@@ -25,6 +25,7 @@ interface DemandePrescription {
 }
 
 type FiltreUrgence = 'TOUS' | 'TRES_URGENT' | 'URGENT' | 'NORMAL'
+type ChoixDelai = '10' | '20' | '30' | 'perso'
 
 function rangUrgence(u: string) {
   if (u === 'TRES_URGENT') return 0
@@ -53,8 +54,16 @@ function labelSexe(sexe?: string | null) {
   return 'Non renseigné'
 }
 
-const TYPES_RDV = ['consultation', 'soin', 'bilan', 'exercice']
+// Ajoute des minutes à une heure "HH:MM" et renvoie "HH:MM"
+function ajouterMinutes(heure: string, minutes: number) {
+  const [h, m] = heure.split(':').map(Number)
+  const d = new Date()
+  d.setHours(h, m + minutes, 0, 0)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
+// Calcule date/heureDebut/heureFin à partir de "maintenant + X minutes"
 function creneauDansMinutes(minutes: number) {
   const pad = (n: number) => String(n).padStart(2, '0')
   const debut = new Date(Date.now() + minutes * 60000)
@@ -74,18 +83,13 @@ export default function PrescriptionsPage() {
   const [filtreUrgence, setFiltreUrgence] = useState<FiltreUrgence>('TOUS')
   const [planifiees, setPlanifiees] = useState<Set<string>>(new Set())
 
-  const [menuOuvert, setMenuOuvert] = useState<string | null>(null)
+  // Carte de planification (ouverte pour une seule demande à la fois)
+  const [panneauOuvert, setPanneauOuvert] = useState<string | null>(null)
+  const [choix, setChoix] = useState<ChoixDelai | null>(null)
+  const [dateP, setDateP] = useState('')
+  const [heureP, setHeureP] = useState('09:00')
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [feedbackParId, setFeedbackParId] = useState<Record<string, { ok: boolean; message: string }>>({})
-
-  const [demandeActive, setDemandeActive] = useState<DemandePrescription | null>(null)
-  const [date, setDate] = useState('')
-  const [heureDebut, setHeureDebut] = useState('09:00')
-  const [heureFin, setHeureFin] = useState('10:00')
-  const [typeRdv, setTypeRdv] = useState('soin')
-  const [motif, setMotif] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+  const [feedbackParId, setFeedbackParId] = useState<Record<string, { ok: boolean; message: string } | undefined>>({})
 
   function chargerDemandes() {
     setChargement(true)
@@ -126,11 +130,28 @@ export default function PrescriptionsPage() {
     })
   }, [demandes, filtreUrgence, recherche, planifiees])
 
-  async function planifierRapide(d: DemandePrescription, minutes: number) {
-    setMenuOuvert(null)
+  function ouvrirPanneau(d: DemandePrescription) {
+    setPanneauOuvert(d.id)
+    setChoix(null)
+    const auj = new Date()
+    setDateP(auj.toISOString().slice(0, 10))
+    setHeureP('09:00')
+    setFeedbackParId((prev) => ({ ...prev, [d.id]: undefined }))
+  }
+
+  function fermerPanneau() {
+    setPanneauOuvert(null)
+    setChoix(null)
+  }
+
+  async function confirmerPlanification(d: DemandePrescription) {
+    if (!choix) return
     setBusyId(d.id)
-    setFeedbackParId((prev) => ({ ...prev, [d.id]: undefined as any }))
-    const creneau = creneauDansMinutes(minutes)
+    const creneau =
+      choix === 'perso'
+        ? { date: dateP, heureDebut: heureP, heureFin: ajouterMinutes(heureP, 30) }
+        : creneauDansMinutes(Number(choix))
+
     const res = await planifierRendezVous({
       prescriptionId: d.id,
       demandeId: d.id,
@@ -151,54 +172,10 @@ export default function PrescriptionsPage() {
     setBusyId(null)
     if (res.ok) {
       setPlanifiees((prev) => new Set(prev).add(d.id))
+      setPanneauOuvert(null)
+      setChoix(null)
     } else {
       setFeedbackParId((prev) => ({ ...prev, [d.id]: res }))
-    }
-  }
-
-  function ouvrirPlanification(d: DemandePrescription) {
-    setMenuOuvert(null)
-    setDemandeActive(d)
-    setFeedback(null)
-    const auj = new Date()
-    setDate(auj.toISOString().slice(0, 10))
-    setHeureDebut('09:00')
-    setHeureFin('10:00')
-    setTypeRdv('soin')
-    setMotif(d.diagnostic || d.renseignements || 'Séance de kinésithérapie')
-  }
-
-  function fermerModale() {
-    if (busy) return
-    setDemandeActive(null)
-  }
-
-  async function confirmerPlanification() {
-    if (!demandeActive) return
-    setBusy(true)
-    setFeedback(null)
-    const res = await planifierRendezVous({
-      prescriptionId: demandeActive.id,
-      demandeId: demandeActive.id,
-      patientId: demandeActive.patientId,
-      diagnostic: demandeActive.diagnostic,
-      renseignements: demandeActive.renseignements,
-      urgence: demandeActive.urgence,
-      alertes: demandeActive.alertes,
-      objectifs: demandeActive.objectifs,
-      remarques: demandeActive.remarques,
-      nomMedecinPrescripteur: demandeActive.nomMedecinPrescripteur,
-      date,
-      heureDebut,
-      heureFin,
-      type: typeRdv,
-      motif,
-    })
-    setBusy(false)
-    setFeedback(res)
-    if (res.ok) {
-      setPlanifiees((prev) => new Set(prev).add(demandeActive.id))
-      setTimeout(() => setDemandeActive(null), 900)
     }
   }
 
@@ -207,6 +184,13 @@ export default function PrescriptionsPage() {
     { valeur: 'TRES_URGENT', label: 'Très urgent' },
     { valeur: 'URGENT', label: 'Urgent' },
     { valeur: 'NORMAL', label: 'Normal' },
+  ]
+
+  const OPTIONS_DELAI: { valeur: ChoixDelai; label: string }[] = [
+    { valeur: '10', label: 'Après 10 min' },
+    { valeur: '20', label: 'Après 20 min' },
+    { valeur: '30', label: 'Après 30 min' },
+    { valeur: 'perso', label: 'Personnaliser' },
   ]
 
   return (
@@ -218,6 +202,7 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
+      {/* BARRE DE RECHERCHE + FILTRES */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex items-center gap-3 bg-surface border border-outline-variant px-4 py-2 rounded-lg flex-1 max-w-md">
           <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
@@ -252,6 +237,7 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
+      {/* LISTE DE CARTES (sans en-tête de tableau) */}
       {chargement ? (
         <div className="py-12 text-center text-on-surface-variant">Chargement des prescriptions…</div>
       ) : erreur ? (
@@ -262,170 +248,118 @@ export default function PrescriptionsPage() {
           <p>Aucune prescription en attente pour le moment.</p>
         </div>
       ) : (
-        <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-visible">
-          <div className="overflow-x-auto md:overflow-visible">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-outline-variant bg-surface-container-low/50">
-                  <th className="table-header">Informations du patient</th>
-                  <th className="table-header text-center">État</th>
-                  <th className="table-header">Diagnostic</th>
-                  <th className="table-header text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtrees.map((d) => {
-                  const s = styleUrgence(d.urgence)
-                  const nomComplet =
-                    d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
-                  const enCours = busyId === d.id
-                  const fb = feedbackParId[d.id]
-                  return (
-                    <tr key={d.id} className={'hover:bg-surface-container-low/50 transition-colors border-l-4 ' + s.bord}>
-                      <td className="table-cell">
-                        <p className="font-semibold text-on-surface">{nomComplet}</p>
-                        <p className="text-xs text-on-surface-variant">
-                          {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
-                        </p>
-                        <p className="text-[11px] text-indigo-600 mt-0.5 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">call_made</span>
-                          {libelleService(d.serviceIdSource)}
-                        </p>
-                      </td>
-                      <td className="table-cell text-center">
-                        <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>{d.urgence}</span>
-                      </td>
-                      <td className="table-cell">
-                        <p className="text-sm text-gray-500 max-w-[280px] truncate">
-                          {d.diagnostic || 'Diagnostic non renseigné'}
-                          {d.renseignements ? ` — ${d.renseignements}` : ''}
-                        </p>
-                      </td>
-                      <td className="table-cell text-center relative">
-                        <button
-                          onClick={() => setMenuOuvert(menuOuvert === d.id ? null : d.id)}
-                          disabled={enCours}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-50"
-                        >
-                          <span className="material-symbols-outlined text-base">event_available</span>
-                          {enCours ? 'Planification…' : 'Planifier'}
-                          {!enCours && <span className="material-symbols-outlined text-sm">expand_more</span>}
-                        </button>
+        <div className="space-y-3">
+          {filtrees.map((d) => {
+            const s = styleUrgence(d.urgence)
+            const nomComplet =
+              d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
+            const enCours = busyId === d.id
+            const fb = feedbackParId[d.id]
+            const panneauActif = panneauOuvert === d.id
 
-                        {menuOuvert === d.id && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setMenuOuvert(null)} />
-                            <div className="absolute right-4 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
+            return (
+              <div key={d.id} className={'bg-surface rounded-xl border border-outline-variant shadow-sm border-l-4 p-4 ' + s.bord}>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + s.badge}>{d.urgence}</span>
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">call_made</span>
+                        {libelleService(d.serviceIdSource)}
+                      </span>
+                    </div>
+                    <p className="font-semibold text-on-surface">{nomComplet}</p>
+                    <p className="text-xs text-on-surface-variant mb-1">
+                      {formatDate(d.patientDateNaissance)} — {labelSexe(d.patientSexe)}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate max-w-xl">
+                      {d.diagnostic || 'Diagnostic non renseigné'}
+                      {d.renseignements ? ` — ${d.renseignements}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={() => (panneauActif ? fermerPanneau() : ouvrirPanneau(d))}
+                      disabled={enCours}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-base">event_available</span>
+                      {enCours ? 'Planification…' : 'Planifier'}
+                    </button>
+
+                    {panneauActif && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={fermerPanneau} />
+                        <div className="absolute right-0 z-50 mt-2 w-72 bg-surface rounded-xl border border-outline-variant shadow-2xl p-4 text-left">
+                          <p className="text-sm font-bold text-on-surface mb-3">Planifier le rendez-vous</p>
+
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            {OPTIONS_DELAI.map((opt) => (
                               <button
-                                onClick={() => planifierRapide(d, 10)}
-                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
+                                key={opt.valeur}
+                                onClick={() => setChoix(opt.valeur)}
+                                className={
+                                  'px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ' +
+                                  (choix === opt.valeur
+                                    ? 'bg-primary text-white border-primary'
+                                    : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container-low')
+                                }
                               >
-                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
-                                Après 10 min
+                                {opt.label}
                               </button>
-                              <button
-                                onClick={() => planifierRapide(d, 20)}
-                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
-                              >
-                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
-                                Après 20 min
-                              </button>
-                              <button
-                                onClick={() => planifierRapide(d, 30)}
-                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
-                              >
-                                <span className="material-symbols-outlined text-base text-teal-600">schedule</span>
-                                Après 30 min
-                              </button>
-                              <div className="border-t border-outline-variant" />
-                              <button
-                                onClick={() => ouvrirPlanification(d)}
-                                className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2"
-                              >
-                                <span className="material-symbols-outlined text-base text-primary">tune</span>
-                                Personnaliser
-                              </button>
+                            ))}
+                          </div>
+
+                          {choix === 'perso' && (
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                              <div>
+                                <label className="text-[11px] font-semibold text-on-surface-variant mb-1 block">Date</label>
+                                <input
+                                  type="date"
+                                  value={dateP}
+                                  onChange={(e) => setDateP(e.target.value)}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-outline-variant text-xs bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] font-semibold text-on-surface-variant mb-1 block">Heure</label>
+                                <input
+                                  type="time"
+                                  value={heureP}
+                                  onChange={(e) => setHeureP(e.target.value)}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-outline-variant text-xs bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                />
+                              </div>
                             </div>
-                          </>
-                        )}
+                          )}
 
-                        {fb && !fb.ok && (
-                          <p className="text-[11px] text-red-600 mt-1 max-w-[180px] ml-auto">{fb.message}</p>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                          {fb && !fb.ok && <p className="text-[11px] text-red-600 mb-2">{fb.message}</p>}
 
-      {demandeActive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-primary">event_available</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={fermerPanneau}
+                              disabled={enCours}
+                              className="flex-1 px-3 py-2 rounded-lg border border-outline-variant text-on-surface text-xs font-semibold hover:bg-surface-container-low disabled:opacity-50"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={() => confirmerPlanification(d)}
+                              disabled={!choix || enCours}
+                              className="flex-1 px-3 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+                            >
+                              {enCours ? 'Confirmation…' : 'Confirmer'}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">Planifier le rendez-vous</h3>
-                <p className="text-xs text-on-surface-variant">
-                  {demandeActive.patientPrenom && demandeActive.patientNom
-                    ? `${demandeActive.patientPrenom} ${demandeActive.patientNom}`
-                    : 'Patient non identifié'}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Type</label>
-                <select value={typeRdv} onChange={(e) => setTypeRdv(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40">
-                  {TYPES_RDV.map((tp) => <option key={tp} value={tp}>{tp}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Heure début</label>
-                <input type="time" value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Heure fin</label>
-                <input type="time" value={heureFin} onChange={(e) => setHeureFin(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs font-semibold text-on-surface-variant mb-1 block">Motif</label>
-                <input type="text" value={motif} onChange={(e) => setMotif(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-outline-variant text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-            </div>
-
-            {feedback && (
-              <p className={'mt-3 text-sm font-semibold ' + (feedback.ok ? 'text-green-600' : 'text-red-600')}>
-                {feedback.message}
-              </p>
-            )}
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={fermerModale} disabled={busy}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold text-sm hover:bg-surface-container-low disabled:opacity-50">
-                Annuler
-              </button>
-              <button onClick={confirmerPlanification} disabled={busy}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm hover:opacity-90 shadow-sm disabled:opacity-50">
-                {busy ? 'Planification…' : 'Confirmer'}
-              </button>
-            </div>
-          </div>
+            )
+          })}
         </div>
       )}
     </AppShell>
