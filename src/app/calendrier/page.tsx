@@ -26,8 +26,6 @@ const TYPE_COLOR: Record<string, string> = {
   exercice:     'bg-amber-50 border-amber-500 text-amber-800',
 }
 
-
-
 const STATUT_COLOR: Record<string, string> = {
   actif:      'bg-emerald-100 text-emerald-700',
   inactif:    'bg-slate-100 text-slate-500',
@@ -39,7 +37,14 @@ function toKey(d: Date) { return d.getFullYear() + '-' + String(d.getMonth()+1).
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate()+n); return r }
 function startOfWeek(d: Date) { const r = new Date(d); const day = r.getDay(); const diff = day===0?-6:1-day; r.setDate(r.getDate()+diff); return r }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1) }
-function heureToIndex(h: string) { if (!h) return -1; const hn = parseInt(h.substring(0,2), 10); const idx = hn - 8; return (idx >= 0 && idx < HOURS.length) ? idx : -1 }
+function heureToIndex(h: string) { if (!h) return -1; const hn = parseInt(h.substring(0,2), 10); const mn = parseInt(h.substring(3,5)||'0', 10); const idx = (hn - 8) + mn/60; return (idx >= 0 && idx <= HOURS.length) ? idx : -1 }
+
+function nowPercent() {
+  const n = new Date()
+  const idx = (n.getHours() + n.getMinutes()/60) - 8
+  if (idx < 0 || idx > HOURS.length) return null
+  return (idx / HOURS.length) * 100
+}
 
 type View = 'jour' | 'semaine' | 'mois'
 
@@ -83,41 +88,65 @@ export default function CalendrierPage() {
 
   const title = useMemo(() => {
     if (view==='jour') return DAYS_SHORT[current.getDay()===0?6:current.getDay()-1] + ' ' + current.getDate() + ' ' + MONTHS[current.getMonth()] + ' ' + current.getFullYear()
-    if (view==='semaine') { const s=startOfWeek(current); const e=addDays(s,6); return t('cal_semaineDu') + ' ' + s.getDate() + ' - ' + e.getDate() + ' ' + MONTHS[e.getMonth()] + ' ' + e.getFullYear() }
+    if (view==='semaine') { const s=startOfWeek(current); const e=addDays(s,6); return t('cal_semaineDu') + ' ' + s.getDate() + ' - ' + e.getDate() + ' '
++ MONTHS[e.getMonth()] + ' ' + e.getFullYear() }
     return MONTHS[current.getMonth()] + ' ' + current.getFullYear()
   }, [view, current, t])
 
   const weekDays  = useMemo(() => { const s=startOfWeek(current); return Array.from({length:7},(_,i)=>addDays(s,i)) }, [current])
-  const monthGrid = useMemo(() => { const first=startOfMonth(current); const dow=first.getDay()===0?6:first.getDay()-1; const start=addDays(first,-dow); return Array.from({length:42},(_,i)=>addDays(start,i)) }, [current])
+  const monthGrid = useMemo(() => { const first=startOfMonth(current); const
+dow=first.getDay()===0?6:first.getDay()-1; const start=addDays(first,-dow); return Array.from({length:42},(_,i)=>addDays(start,i)) }, [current])
 
   const apptForDay = (key: string) => rdvs.filter(r => r.date === key)
   const colorOf    = (r: RendezVous) => TYPE_COLOR[r.type] || 'bg-slate-100 border-slate-400 text-slate-700'
-  const patientName= (r: RendezVous) => r.patient ? r.patient.prenom + ' ' + r.patient.nom : '-'
+  const patientName= (r: RendezVous) => r.patient ? r.patient.prenom + ' ' +
+r.patient.nom : '-'
   const today      = toKey(new Date())
+  const nowPct     = nowPercent()
 
   function RdvCard({ a, style, small }: { a: RendezVous; style?: React.CSSProperties; small?: boolean }) {
     return (
       <div
         onClick={() => selectRdv(a)}
-        className={'border-l-4 rounded-r shadow-sm cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ' + (selectedRdv?.id===a.id ? 'ring-2 ring-primary scale-[1.02] ' : '') + colorOf(a) + (small ? ' p-1.5' : ' p-3')}
+        className={'border-l-4 rounded-r-lg shadow-sm cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md overflow-hidden ' + (selectedRdv?.id===a.id ? 'ring-2 ring-primary scale-[1.02] ' : '') + colorOf(a) + (small ? ' p-1.5' : ' p-2')}
         style={style}
       >
-        <p className={'font-bold truncate ' + (small?'text-[10px]':'text-xs')}>{a.motif}</p>
-        <p className={'opacity-80 mt-0.5 truncate ' + (small?'text-[9px]':'text-[10px]')}>{patientName(a)}</p>
-        {!small && <p className="text-[10px] opacity-70 mt-0.5">{a.heureDebut?.substring(0,5)} - {a.heureFin?.substring(0,5)}</p>}
+        <p className={'font-bold truncate ' + (small?'text-[10px]':'text-[11px]')}>{a.motif}</p>
+        <p className={'opacity-80 truncate ' + (small?'text-[9px]':'text-[10px]')}>{patientName(a)}</p>
+        {!small && <p className="text-[9px] opacity-70">{a.heureDebut?.substring(0,5)} - {a.heureFin?.substring(0,5)}</p>}
+      </div>
+    )
+  }
+
+  function HourGridLines() {
+    return (
+      <>
+        {HOURS.map((h, hi) => (
+          <div key={h} className="absolute left-0 right-0 border-b border-outline-variant/70"
+            style={{ top: (hi / HOURS.length) * 100 + '%', height: (100 / HOURS.length) + '%' }} />
+        ))}
+      </>
+    )
+  }
+
+  function NowLine() {
+    if (nowPct === null) return null
+    return (
+      <div className="absolute left-0 right-0 h-[2px] bg-red-500 z-20 pointer-events-none flex items-center" style={{ top: nowPct + '%' }}>
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-[5px]" />
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
         <TopBar searchPlaceholder={t('cal_rechercherPlaceholder')} />
         <div className="flex flex-1 overflow-hidden">
-          <section className="flex-1 overflow-auto">
+          <section className="flex-1 flex flex-col overflow-hidden">
 
-            <div className="sticky top-0 z-30 bg-surface/90 backdrop-blur-sm border-b border-outline-variant px-6 py-3 flex justify-between items-center">
+            <div className="flex-shrink-0 bg-surface shadow-sm border-b border-outline-variant px-6 py-3 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
@@ -127,20 +156,18 @@ export default function CalendrierPage() {
                   <span className="material-symbols-outlined text-sm">chevron_right</span>
                 </button>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex rounded-lg border border-outline-variant overflow-hidden text-sm">
-                  {(['jour','semaine','mois'] as View[]).map((v) => (
-                    <button key={v} onClick={() => setView(v)}
-                      className={'px-3 py-1.5 font-semibold transition-colors capitalize ' + (view===v?'bg-primary text-white':'text-on-surface-variant hover:bg-surface-container-low')}>
-                      {v==='jour'?t('cal_jour'):v==='semaine'?t('cal_semaine'):t('cal_mois')}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex rounded-lg border border-outline-variant overflow-hidden text-sm shadow-sm">
+                {(['jour','semaine','mois'] as View[]).map((v) => (
+                  <button key={v} onClick={() => setView(v)}
+                    className={'px-3 py-1.5 font-semibold transition-colors capitalize ' + (view===v?'bg-primary text-white':'text-on-surface-variant hover:bg-surface-container-low')}>
+                    {v==='jour'?t('cal_jour'):v==='semaine'?t('cal_semaine'):t('cal_mois')}
+                  </button>
+                ))}
               </div>
             </div>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-24 text-on-surface-variant">
+              <div className="flex-1 flex flex-col items-center justify-center text-on-surface-variant">
                 <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-sm">{t('cal_chargement')}</p>
               </div>
@@ -150,92 +177,104 @@ export default function CalendrierPage() {
                   const key = toKey(current)
                   const appts = apptForDay(key)
                   return (
-                    <div className="min-w-[400px]">
-                      <div className="border-b border-outline-variant bg-surface sticky top-[57px] z-20 px-6 py-3 text-center">
-                        <p className="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">{DAYS_SHORT[current.getDay()===0?6:current.getDay()-1]}</p>
-                        <p className="text-2xl font-bold text-primary">{current.getDate()}</p>
-                        <p className="text-xs text-on-surface-variant">{appts.length} {t('cal_rendezVous').toLowerCase()}</p>
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <div className="flex-shrink-0 border-b border-outline-variant bg-surface px-6 py-2 text-center shadow-sm">
+                        <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider">{DAYS_SHORT[current.getDay()===0?6:current.getDay()-1]}</p>
+                        <p className="text-xl font-bold text-primary leading-tight">{current.getDate()}</p>
+                        <p className="text-[10px] text-on-surface-variant">{appts.length} {t('cal_rendezVous').toLowerCase()}</p>
                       </div>
-                      <div className="relative">
-                        {HOURS.map((h, hi) => (
-                          <div key={h} className="flex border-b border-outline-variant min-h-[80px]">
-                            <div className="w-20 flex-shrink-0 p-3 border-r border-outline-variant flex items-start justify-end pr-3">
-                              <span className="text-[11px] text-on-surface-variant font-semibold">{h}</span>
+                      <div className="flex-1 flex overflow-hidden">
+                        <div className="w-16 flex-shrink-0 border-r border-outline-variant relative">
+                          {HOURS.map((h, hi) => (
+                            <div key={h} className="absolute right-2 -translate-y-1/2"
+                              style={{ top: (hi / HOURS.length) * 100 + '%' }}>
+                              <span className="text-[10px] text-on-surface-variant font-semibold">{h}</span>
                             </div>
-                            <div className="flex-1 hover:bg-surface-container-low/30 transition-colors relative">
-                              {appts.filter(a => heureToIndex(a.heureDebut)===hi).map(a => (
-                                <RdvCard key={a.id} a={a}
-                                  style={{ position:'absolute', left:'8px', right:'8px', top:'4px',
-                                    height:(Math.max(1,heureToIndex(a.heureFin)-heureToIndex(a.heureDebut))*80-8) + 'px' }} />
-                              ))}
+                          ))}
+                        </div>
+                        <div className="flex-1 relative">
+                          <HourGridLines />
+                          <NowLine />
+                          {appts.filter(a => heureToIndex(a.heureDebut) >= 0).map(a => {
+                            const s = heureToIndex(a.heureDebut), e = heureToIndex(a.heureFin)
+                            return (
+                              <RdvCard key={a.id} a={a}
+                                style={{ position: 'absolute', left: '6px', right: '6px',
+                                  top: (s / HOURS.length) * 100 + '%',
+                                  height: (Math.max(0.5, e - s) / HOURS.length) * 100 + '%' }} />
+                            )
+                          })}
+                          {appts.length===0 && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-on-surface-variant">
+                              <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
+                              <p className="text-sm">{t('cal_aucunRdvJour')}</p>
                             </div>
-                          </div>
-                        ))}
-                        {appts.length===0 && (
-                          <div className="flex flex-col items-center justify-center py-24 text-on-surface-variant">
-                            <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                            <p className="text-sm">{t('cal_aucunRdvJour')}</p>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
                 })()}
 
                 {view==='semaine' && (
-                  <div className="min-w-[700px]">
-                    <div className="grid border-b border-outline-variant bg-surface sticky top-[57px] z-20" style={{gridTemplateColumns:'80px repeat(7,1fr)'}}>
-                      <div className="p-3 border-r border-outline-variant" />
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-shrink-0 grid border-b border-outline-variant bg-surface shadow-sm" style={{gridTemplateColumns:'56px repeat(7,1fr)'}}>
+                      <div className="p-2 border-r border-outline-variant" />
                       {weekDays.map((d) => {
                         const k = toKey(d)
                         const isToday = k===today
                         return (
                           <div key={k} onClick={() => { setCurrent(d); setView('jour') }}
-                            className={'p-3 text-center border-r border-outline-variant last:border-r-0 cursor-pointer hover:bg-primary/5 transition-colors ' + (isToday?'bg-primary/5':'')}>
-                            <p className="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">{DAYS_SHORT[d.getDay()===0?6:d.getDay()-1]}</p>
-                            <p className={'text-lg font-bold mt-0.5 ' + (isToday?'text-primary':'text-on-surface')}>{d.getDate()}</p>
-                            <p className="text-[10px] text-on-surface-variant">{apptForDay(k).length>0?apptForDay(k).length+' RDV':''}</p>
+                            className={'py-2 text-center border-r border-outline-variant last:border-r-0 cursor-pointer hover:bg-primary/5 transition-colors ' + (isToday?'bg-primary/5':'')}>
+                            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider">{DAYS_SHORT[d.getDay()===0?6:d.getDay()-1]}</p>
+                            <p className={'text-base font-bold leading-tight ' + (isToday?'text-primary':'text-on-surface')}>{d.getDate()}</p>
+                            <p className="text-[9px] text-on-surface-variant">{apptForDay(k).length>0?apptForDay(k).length+' RDV':''}</p>
                           </div>
                         )
                       })}
                     </div>
-                    <div className="relative">
-                      {HOURS.map((h, hi) => (
-                        <div key={h} className="border-b border-outline-variant min-h-[80px]" style={{display:'grid',gridTemplateColumns:'80px repeat(7,1fr)'}}>
-                          <div className="p-3 border-r border-outline-variant flex items-start justify-end pr-3">
-                            <span className="text-[11px] text-on-surface-variant font-semibold">{h}</span>
+                    <div className="flex-1 flex overflow-hidden">
+                      <div className="w-14 flex-shrink-0 border-r border-outline-variant relative">
+                        {HOURS.map((h, hi) => (
+                          <div key={h} className="absolute right-1.5 -translate-y-1/2" style={{ top: (hi / HOURS.length) * 100 + '%' }}>
+                            <span className="text-[9px] text-on-surface-variant font-semibold">{h}</span>
                           </div>
-                          {weekDays.map((d) => {
-                            const k = toKey(d)
-                            const isToday = k===today
-                            const appts = apptForDay(k).filter(a => heureToIndex(a.heureDebut)===hi)
-                            return (
-                              <div key={k} className={'border-r border-outline-variant last:border-r-0 relative ' + (isToday?'bg-primary/5':'')}>
-                                {appts.map(a => (
+                        ))}
+                      </div>
+                      <div className="flex-1 grid relative" style={{gridTemplateColumns:'repeat(7,1fr)'}}>
+                        {weekDays.map((d) => {
+                          const k = toKey(d)
+                          const isToday = k===today
+                          const appts = apptForDay(k).filter(a => heureToIndex(a.heureDebut) >= 0)
+                          return (
+                            <div key={k} className={'border-r border-outline-variant last:border-r-0 relative ' + (isToday?'bg-primary/5':'')}>
+                              <HourGridLines />
+                              {isToday && <NowLine />}
+                              {appts.map(a => {
+                                const s = heureToIndex(a.heureDebut), e = heureToIndex(a.heureFin)
+                                return (
                                   <RdvCard key={a.id} a={a} small
-                                    style={{ position:'absolute', left:'2px', right:'2px', top:'4px',
-                                      height:(Math.max(1,heureToIndex(a.heureFin)-heureToIndex(a.heureDebut))*80-8) + 'px' }} />
-                                ))}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ))}
-                      <div className="absolute left-0 right-0 h-[2px] bg-red-500 z-20 pointer-events-none flex items-center" style={{top:'280px'}}>
-                        <div className="w-3 h-3 rounded-full bg-red-500 ml-20 -translate-x-1/2" />
+                                    style={{ position: 'absolute', left: '2px', right: '2px',
+                                      top: (s / HOURS.length) * 100 + '%',
+                                      height: (Math.max(0.5, e - s) / HOURS.length) * 100 + '%' }} />
+                                )
+                              })}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {view==='mois' && (
-                  <div className="p-4">
-                    <div className="grid grid-cols-7 mb-1">
+                  <div className="flex-1 flex flex-col overflow-hidden p-4">
+                    <div className="flex-shrink-0 grid grid-cols-7 mb-1">
                       {DAYS_SHORT.map(d => (
-                        <div key={d} className="text-center text-xs font-semibold text-on-surface-variant uppercase tracking-wider py-2">{d}</div>
+                        <div key={d} className="text-center text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider py-1">{d}</div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-1">
+                    <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1.5 overflow-hidden">
                       {monthGrid.map((d) => {
                         const k = toKey(d)
                         const isCurrentMonth = d.getMonth()===current.getMonth()
@@ -243,22 +282,23 @@ export default function CalendrierPage() {
                         const appts = apptForDay(k)
                         return (
                           <div key={k}
-                            className={'min-h-[90px] rounded-xl border p-2 transition-colors ' + (isCurrentMonth?'bg-surface border-outline-variant':'bg-surface-container-low border-outline-variant') + (isToday?' border-primary ring-2 ring-primary/20':'')}>
+                            className={'rounded-xl border p-1.5 flex flex-col overflow-hidden transition-colors ' + (isCurrentMonth?'bg-surface border-outline-variant shadow-sm':'bg-surface-container-low border-outline-variant') + (isToday?' border-primary ring-2 ring-primary/20':'')}>
                             <p onClick={() => { setCurrent(d); setView('jour') }}
-                              className={'text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer hover:bg-primary/10 ' + (isToday?'bg-primary text-white':isCurrentMonth?'text-on-surface':'text-on-surface-variant')}>
+                              className={'flex-shrink-0 text-xs font-bold mb-0.5 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer hover:bg-primary/10 '
++ (isToday?'bg-primary text-white':isCurrentMonth?'text-on-surface':'text-on-surface-variant')}>
                               {d.getDate()}
                             </p>
-                            <div className="space-y-0.5">
-                              {appts.slice(0,2).map(a => (
+                            <div className="flex-1 overflow-hidden space-y-0.5">
+                              {appts.slice(0,3).map(a => (
                                 <div key={a.id} onClick={() => selectRdv(a)}
                                   className={'text-[9px] font-semibold px-1.5 py-0.5 rounded truncate border-l-2 cursor-pointer hover:opacity-80 transition-opacity ' + colorOf(a) + (selectedRdv?.id===a.id?' ring-1 ring-primary':'')}>
                                   {a.motif}
                                 </div>
                               ))}
-                              {appts.length>2 && (
+                              {appts.length>3 && (
                                 <p onClick={() => { setCurrent(d); setView('jour') }}
                                   className="text-[9px] text-on-surface-variant font-semibold pl-1 cursor-pointer hover:text-primary">
-                                  +{appts.length-2} {t('cal_autres')}
+                                  +{appts.length-3} {t('cal_autres')}
                                 </p>
                               )}
                             </div>
