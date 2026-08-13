@@ -136,10 +136,6 @@ export default function CalendrierPage() {
                     </button>
                   ))}
                 </div>
-                <button className="btn-primary text-sm px-4 py-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">add</span>
-                  {t('cal_nouveauRdv')}
-                </button>
               </div>
             </div>
 
@@ -362,12 +358,6 @@ export default function CalendrierPage() {
           )}
         </div>
       </div>
-
-      <button
-        className={'fixed bottom-8 z-30 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all ' + (drawerOpen?'right-[416px]':'right-8')}
-        onClick={() => setDrawerOpen(true)}>
-        <span className="material-symbols-outlined text-2xl">add</span>
-      </button>
     </div>
   )
 }
