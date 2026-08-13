@@ -5,45 +5,12 @@ import AppShell from '@/components/layout/AppShell'
 import { useLanguage } from '@/context/LanguageContext'
 import { getSeances, type Seance } from '@/lib/api'
 
-// Palette de couleurs visibles, une couleur fixe assignee par patient
-const PALETTE_PATIENT = [
-  { bg: 'bg-teal-50',    border: 'border-teal-200',    accent: 'bg-teal-500',    text: 'text-teal-800' },
-  { bg: 'bg-blue-50',    border: 'border-blue-200',    accent: 'bg-blue-500',    text: 'text-blue-800' },
-  { bg: 'bg-purple-50',  border: 'border-purple-200',  accent: 'bg-purple-500',  text: 'text-purple-800' },
-  { bg: 'bg-amber-50',   border: 'border-amber-200',   accent: 'bg-amber-500',   text: 'text-amber-800' },
-  { bg: 'bg-rose-50',    border: 'border-rose-200',    accent: 'bg-rose-500',    text: 'text-rose-800' },
-  { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-500', text: 'text-emerald-800' },
-  { bg: 'bg-indigo-50',  border: 'border-indigo-200',  accent: 'bg-indigo-500',  text: 'text-indigo-800' },
-  { bg: 'bg-cyan-50',    border: 'border-cyan-200',    accent: 'bg-cyan-500',    text: 'text-cyan-800' },
-]
-
-// Palette de couleurs lisibles et distinctes pour les noms de kinesitherapeutes
-const PALETTE_KINE = [
-  'text-red-600', 'text-blue-600', 'text-emerald-600', 'text-purple-600',
-  'text-orange-600', 'text-pink-600', 'text-indigo-600', 'text-teal-600',
-]
-
-function hashString(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 31 + s.charCodeAt(i)) >>> 0
-  }
-  return h
-}
-
-function couleurPatient(id: number) {
-  return PALETTE_PATIENT[id % PALETTE_PATIENT.length]
-}
-
-function couleurKine(nom: string) {
-  return PALETTE_KINE[hashString(nom) % PALETTE_KINE.length]
-}
-
 export default function ArchivesPage() {
   const { t } = useLanguage()
   const [seances, setSeances] = useState<Seance[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [detailsGroupe, setDetailsGroupe] = useState<{ patientId: number; patient: Seance['patient']; seances: Seance[] } | null>(null)
 
   useEffect(() => {
     getSeances()
@@ -52,7 +19,6 @@ export default function ArchivesPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Regroupement des seances par patient
   const groupes = useMemo(() => {
     const map = new Map<number, { patient: Seance['patient']; seances: Seance[] }>()
     for (const s of seances) {
@@ -85,7 +51,6 @@ export default function ArchivesPage() {
   return (
     <AppShell searchPlaceholder={t('arc_rechercherPlaceholder')} showSearch={false}>
 
-      {/* TITRE + RECHERCHE */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-on-surface font-manrope">{t('arc_titre')}</h2>
         <p className="text-sm text-on-surface-variant mt-1 mb-4">
@@ -111,61 +76,30 @@ export default function ArchivesPage() {
         </div>
       ) : (
         <>
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((g) => {
-              const c = couleurPatient(g.patientId)
               const p = g.patient!
               return (
-                <div key={g.patientId} className={'rounded-2xl border-2 p-5 ' + c.bg + ' ' + c.border}>
-
-                  {/* EN-TETE PATIENT */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={'w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ' + c.accent}>
+                <div key={g.patientId}
+                  className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 bg-emerald-500 shadow-sm">
                       {p.prenom?.[0]}{p.nom?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={'font-bold text-sm ' + c.text}>{p.prenom} {p.nom}</p>
-                      <p className="text-xs text-on-surface-variant truncate">{p.diagnostic || 'Diagnostic non renseigné'}</p>
+                      <p className="font-bold text-sm text-emerald-800 truncate">{p.prenom} {p.nom}</p>
+                      <p className="text-[11px] text-emerald-700/70">
+                        {g.seances.length} séance{g.seances.length > 1 ? 's' : ''} archivée{g.seances.length > 1 ? 's' : ''}
+                      </p>
                     </div>
-                    <span className={'text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white flex-shrink-0 ' + c.accent}>
-                      {g.seances.length} séance{g.seances.length > 1 ? 's' : ''}
-                    </span>
                   </div>
-
-                  {/* CARTES SEANCES (une carte par seance) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {g.seances.map((s) => (
-                      <div key={s.id} className="bg-white/70 rounded-xl border border-white p-4">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">event</span>
-                            {s.date}
-                          </span>
-                          <span className="text-[11px] text-on-surface-variant">:</span>
-                          <span className="text-[11px] font-mono text-on-surface-variant">
-                            {(s.heureDebut || '').replace(':', 'h')}
-                          </span>
-                        </div>
-                        <div className="space-y-1.5 mb-3">
-                          <p className="text-xs">
-                            <span className="font-semibold text-on-surface-variant">Diagnostic : </span>
-                            <span className="text-on-surface">{p.diagnostic || '—'}</span>
-                          </p>
-                          <p className="text-xs">
-                            <span className="font-semibold text-on-surface-variant">Traitement : </span>
-                            <span className="text-on-surface">{s.traitement || '—'}</span>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 pt-2 border-t border-outline-variant/50">
-                          <span className="material-symbols-outlined text-sm text-on-surface-variant">badge</span>
-                          <span className={'text-xs font-bold ' + couleurKine(s.kine || 'Inconnu')}>
-                            {s.kine || 'Kinésithérapeute inconnu'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
+                  <button
+                    onClick={() => setDetailsGroupe(g)}
+                    className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-base">visibility</span>
+                    Voir
+                  </button>
                 </div>
               )
             })}
@@ -186,6 +120,74 @@ export default function ArchivesPage() {
         </>
       )}
 
+      {detailsGroupe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div className="sticky top-0 bg-emerald-50 border-b border-emerald-200 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold bg-emerald-500 flex-shrink-0">
+                  {detailsGroupe.patient?.prenom?.[0]}{detailsGroupe.patient?.nom?.[0]}
+                </div>
+                <div>
+                  <h3 className="font-bold text-emerald-800">{detailsGroupe.patient?.prenom} {detailsGroupe.patient?.nom}</h3>
+                  <p className="text-xs text-emerald-700/70">{detailsGroupe.seances.length} séance{detailsGroupe.seances.length > 1 ? 's' : ''} archivée{detailsGroupe.seances.length > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <button onClick={() => setDetailsGroupe(null)} className="text-emerald-700 hover:text-emerald-900">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {detailsGroupe.seances.map((s) => {
+                const p = s.patient
+                return (
+                  <div key={s.id} className="bg-emerald-50/50 rounded-xl border border-emerald-100 p-5">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-emerald-200">
+                      <span className="material-symbols-outlined text-emerald-600 text-lg">event</span>
+                      <span className="text-sm font-bold text-emerald-800">{s.date}</span>
+                      <span className="text-sm text-emerald-700/60">·</span>
+                      <span className="text-sm font-mono text-emerald-700/80">{(s.heureDebut || '').substring(0,5)} - {(s.heureFin || '').substring(0,5)}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <ChampDetail label="Dr prescripteur" value={(p as any)?.nomMedecinPrescripteur} />
+                      <ChampDetail label="Objectif prescripteur" value={(p as any)?.objectifs} />
+                      <ChampDetail label="Diagnostic" value={p?.diagnostic} />
+                      <ChampDetail label="Bilan kinésithérapie" value={null} enAttente />
+                      <ChampDetail label="Traitement" value={s.traitement} />
+                      <ChampDetail label="Évolution / suivi" value={s.evolution} />
+                      <ChampDetail label="Conseil" value={s.conseil} full />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-3 mt-3 border-t border-emerald-200">
+                      <span className="material-symbols-outlined text-sm text-emerald-700/70">badge</span>
+                      <span className="text-xs font-bold text-emerald-800">{s.kine || 'Kinésithérapeute inconnu'}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
     </AppShell>
+  )
+}
+
+function ChampDetail({ label, value, enAttente, full }: { label: string; value?: string | null; enAttente?: boolean; full?: boolean }) {
+  return (
+    <div className={full ? 'sm:col-span-2' : ''}>
+      <p className="text-[10px] font-bold text-emerald-700/70 uppercase tracking-wider mb-0.5">{label}</p>
+      {enAttente ? (
+        <p className="text-xs text-amber-600 italic flex items-center gap-1">
+          <span className="material-symbols-outlined text-[13px]">info</span>
+          Champ à venir — non encore disponible dans le système
+        </p>
+      ) : (
+        <p className="text-sm text-on-surface">{value || '—'}</p>
+      )}
+    </div>
   )
 }

@@ -7,6 +7,11 @@ import AppShell from '@/components/layout/AppShell'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
+function nomUtilisateurConnecte() {
+  if (typeof window === 'undefined') return 'Kinésithérapeute'
+  return localStorage.getItem('nomUtilisateurConnecte') || 'Kinésithérapeute'
+}
+
 interface Patient {
   id: number; numeroDossier: string; nom: string; prenom: string
   dateNaissance: string; sexe: string; adresse: string; telephone: string
@@ -223,7 +228,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
         traitement,
         evolution,
         conseil,
-        kine: 'Dr. Elena Vance',
+        kine: nomUtilisateurConnecte(),
       }),
     }).catch(() => {})
   }
