@@ -4,13 +4,10 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AppShell from '@/components/layout/AppShell'
+import { getUtilisateurConnecte } from '@/lib/utilisateur'
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
-function nomUtilisateurConnecte() {
-  if (typeof window === 'undefined') return 'Kinésithérapeute'
-  return localStorage.getItem('nomUtilisateurConnecte') || 'Kinésithérapeute'
-}
 
 interface Patient {
   id: number; numeroDossier: string; nom: string; prenom: string
@@ -228,7 +225,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
         traitement,
         evolution,
         conseil,
-        kine: nomUtilisateurConnecte(),
+        kine: getUtilisateurConnecte().displayName,
       }),
     }).catch(() => {})
   }
