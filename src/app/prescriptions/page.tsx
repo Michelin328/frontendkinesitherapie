@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import { libelleService } from '@/lib/serviceLabels'
 import { planifierRendezVous } from '@/app/demandes-kine/actions'
@@ -33,7 +34,6 @@ function rangUrgence(u: string) {
   return 2
 }
 
-// Couleurs par urgence : badge (carte) + entête (modale)
 function styleUrgence(u: string) {
   if (u === 'TRES_URGENT')
     return { badge: 'bg-red-100 text-red-700', bord: 'border-l-red-500', entete: 'bg-red-50', accent: 'text-red-700' }
@@ -57,7 +57,6 @@ function labelSexe(sexe?: string | null) {
   return 'Non renseigné'
 }
 
-// Ajoute des minutes à une heure "HH:MM" et renvoie "HH:MM"
 function ajouterMinutes(heure: string, minutes: number) {
   const [h, m] = heure.split(':').map(Number)
   const d = new Date()
@@ -66,7 +65,6 @@ function ajouterMinutes(heure: string, minutes: number) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// Calcule date/heureDebut/heureFin à partir de "maintenant + X minutes"
 function creneauDansMinutes(minutes: number) {
   const pad = (n: number) => String(n).padStart(2, '0')
   const debut = new Date(Date.now() + minutes * 60000)
@@ -85,15 +83,17 @@ const OPTIONS_DELAI: { valeur: ChoixDelai; label: string }[] = [
   { valeur: 'perso', label: 'Personnaliser' },
 ]
 
-export default function PrescriptionsPage() {
+function PrescriptionsContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [demandes, setDemandes] = useState<DemandePrescription[]>([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState<string | null>(null)
   const [recherche, setRecherche] = useState('')
   const [filtreUrgence, setFiltreUrgence] = useState<FiltreUrgence>('TOUS')
   const [planifiees, setPlanifiees] = useState<Set<string>>(new Set())
+  const [patientIdFiltre, setPatientIdFiltre] = useState<string | null>(null)
 
-  // Modale de planification (centrée, fond flou)
   const [demandeActive, setDemandeActive] = useState<DemandePrescription | null>(null)
   const [choix, setChoix] = useState<ChoixDelai | null>(null)
   const [dateP, setDateP] = useState('')
@@ -120,25 +120,47 @@ export default function PrescriptionsPage() {
     chargerDemandes()
   }, [])
 
+  useEffect(() => {
+    const pid = searchParams.get('patientId')
+    setPatientIdFiltre(pid)
+  }, [searchParams])
+
+  function effacerFiltrePatient() {
+    setPatientIdFiltre(null)
+    router.replace('/prescriptions')
+  }
+
+  const patientFiltreNom = useMemo(() => {
+    if (!patientIdFiltre) return null
+    const d = demandes.find((x) => x.patientId === patientIdFiltre)
+    return d?.patientPrenom && d?.patientNom ? `${d.patientPrenom} ${d.patientNom}` : null
+  }, [patientIdFiltre, demandes])
+
   const filtrees = useMemo(() => {
     let liste = demandes.filter((d) => d.statut === 'CREEE' && !planifiees.has(d.id))
-    if (filtreUrgence !== 'TOUS') {
-      liste = liste.filter((d) => d.urgence === filtreUrgence)
+
+    if (patientIdFiltre) {
+      liste = liste.filter((d) => d.patientId === patientIdFiltre)
+    } else {
+      if (filtreUrgence !== 'TOUS') {
+        liste = liste.filter((d) => d.urgence === filtreUrgence)
+      }
+      const s = recherche.trim().toLowerCase()
+      if (s) {
+        liste = liste.filter((d) =>
+          `${d.patientPrenom ?? ''} ${d.patientNom ?? ''}`.toLowerCase().includes(s) ||
+          (d.diagnostic ?? '').toLowerCase().includes(s) ||
+          libelleService(d.serviceIdSource).toLowerCase().includes(s),
+        )
+      }
     }
-    const s = recherche.trim().toLowerCase()
-    if (s) {
-      liste = liste.filter((d) =>
-        `${d.patientPrenom ?? ''} ${d.patientNom ?? ''}`.toLowerCase().includes(s) ||
-        (d.diagnostic ?? '').toLowerCase().includes(s) ||
-        libelleService(d.serviceIdSource).toLowerCase().includes(s),
-      )
-    }
+
     return [...liste].sort((a, b) => {
       const diff = rangUrgence(a.urgence) - rangUrgence(b.urgence)
       if (diff !== 0) return diff
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
-  }, [demandes, filtreUrgence, recherche, planifiees])
+  }, [demandes, filtreUrgence, recherche, planifiees, patientIdFiltre])
 
   function ouvrirModale(d: DemandePrescription) {
     setDemandeActive(d)
@@ -214,42 +236,58 @@ export default function PrescriptionsPage() {
         </div>
       </div>
 
-      {/* BARRE DE RECHERCHE + FILTRES */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex items-center gap-3 bg-surface border border-outline-variant px-4 py-2 rounded-lg flex-1 max-w-md">
-          <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
-          <input
-            type="text"
-            placeholder="Rechercher un patient, un diagnostic, un service…"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            className="bg-transparent border-none focus:outline-none text-sm w-full text-on-surface placeholder:text-on-surface-variant"
-          />
-          {recherche && (
-            <button onClick={() => setRecherche('')} className="text-on-surface-variant hover:text-red-500 transition-colors flex-shrink-0">
-              <span className="material-symbols-outlined text-lg">close</span>
-            </button>
-          )}
+      {patientIdFiltre && (
+        <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-lg bg-primary/10 border border-primary/30">
+          <p className="text-sm text-on-surface">
+            <span className="material-symbols-outlined text-sm align-middle mr-1">filter_alt</span>
+            Filtré sur <strong>{patientFiltreNom || 'ce patient'}</strong>
+          </p>
+          <button
+            onClick={effacerFiltrePatient}
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          >
+            Voir tous les patients
+            <span className="material-symbols-outlined text-sm">close</span>
+          </button>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {FILTRES.map((f) => (
-            <button
-              key={f.valeur}
-              onClick={() => setFiltreUrgence(f.valeur)}
-              className={
-                'px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors ' +
-                (filtreUrgence === f.valeur
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container-low')
-              }
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* LISTE DE CARTES ALIGNÉES EN 4 COLONNES */}
+      {!patientIdFiltre && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex items-center gap-3 bg-surface border border-outline-variant px-4 py-2 rounded-lg flex-1 max-w-md">
+            <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
+            <input
+              type="text"
+              placeholder="Rechercher un patient, un diagnostic, un service…"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-sm w-full text-on-surface placeholder:text-on-surface-variant"
+            />
+            {recherche && (
+              <button onClick={() => setRecherche('')} className="text-on-surface-variant hover:text-red-500 transition-colors flex-shrink-0">
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {FILTRES.map((f) => (
+              <button
+                key={f.valeur}
+                onClick={() => setFiltreUrgence(f.valeur)}
+                className={
+                  'px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors ' +
+                  (filtreUrgence === f.valeur
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container-low')
+                }
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {chargement ? (
         <div className="py-12 text-center text-on-surface-variant">Chargement des prescriptions…</div>
       ) : erreur ? (
@@ -257,7 +295,7 @@ export default function PrescriptionsPage() {
       ) : filtrees.length === 0 ? (
         <div className="py-12 text-center text-on-surface-variant">
           <span className="material-symbols-outlined text-4xl mb-2">inbox</span>
-          <p>Aucune prescription en attente pour le moment.</p>
+          <p>{patientIdFiltre ? "Aucune prescription en attente pour ce patient." : 'Aucune prescription en attente pour le moment.'}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -306,7 +344,6 @@ export default function PrescriptionsPage() {
         </div>
       )}
 
-      {/* MODALE CENTRÉE DE PLANIFICATION */}
       {demandeActive && sActive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -386,5 +423,13 @@ export default function PrescriptionsPage() {
         </div>
       )}
     </AppShell>
+  )
+}
+
+export default function PrescriptionsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-24 text-on-surface-variant">Chargement...</div>}>
+      <PrescriptionsContent />
+    </Suspense>
   )
 }

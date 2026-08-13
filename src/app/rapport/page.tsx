@@ -40,6 +40,75 @@ function startOfWeek(d: Date) {
   r.setDate(r.getDate()+diff); r.setHours(0,0,0,0); return r;
 }
 
+const MOIS_LABEL = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc']
+
+function BarChart({ data }: { data: { label: string; count: number }[] }) {
+  const max = Math.max(1, ...data.map(d => d.count))
+  const compact = data.length > 15
+  return (
+    <div className="flex items-end gap-1 h-40 overflow-x-auto pb-1">
+      {data.map((d, i) => (
+        <div key={i} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: compact ? '10px' : '26px' }}>
+          <span className="text-[9px] text-on-surface-variant">{d.count > 0 ? d.count : ''}</span>
+          <div
+            className="w-full bg-primary/80 rounded-t transition-all"
+            style={{ height: `${(d.count / max) * 110}px`, minHeight: d.count > 0 ? '3px' : '0px' }}
+            title={`${d.label} : ${d.count}`}
+          />
+          {!compact && (
+            <span className="text-[9px] text-on-surface-variant whitespace-nowrap">{d.label}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function DonutChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  const radius = 55
+  const cx = 65, cy = 65
+  const circumference = 2 * Math.PI * radius
+  let cumulative = 0
+
+  return (
+    <div className="flex items-center gap-5 flex-wrap">
+      <svg viewBox="0 0 130 130" className="w-32 h-32 flex-shrink-0">
+        <circle cx={cx} cy={cy} r={radius} fill="none" stroke="#e5e7eb" strokeWidth="18" />
+        {total > 0 && data.map((d, i) => {
+          const fraction = d.value / total
+          const dash = fraction * circumference
+          const gap = circumference - dash
+          const rotation = (cumulative / total) * 360
+          cumulative += d.value
+          if (d.value === 0) return null
+          return (
+            <circle
+              key={i}
+              cx={cx} cy={cy} r={radius} fill="none"
+              stroke={d.color} strokeWidth="18"
+              strokeDasharray={`${dash} ${gap}`}
+              transform={`rotate(${rotation - 90} ${cx} ${cy})`}
+            />
+          )
+        })}
+        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" className="fill-on-surface text-lg font-bold">
+          {total}
+        </text>
+      </svg>
+      <div className="space-y-1.5">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+            <span className="text-on-surface-variant">{d.label}</span>
+            <span className="font-bold text-on-surface">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function RapportPage() {
   const { t } = useLanguage()
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
@@ -66,6 +135,7 @@ export default function RapportPage() {
       .then((data: Seance[]) => setSeances(Array.isArray(data) ? data : []))
       .catch(() => setSeances([]))
   }, [])
+
   const [periode, setPeriode] = useState<Periode>('mois')
   const [refDate, setRefDate] = useState(new Date())
 
@@ -116,6 +186,51 @@ export default function RapportPage() {
     return { total, effectues, annules, hommes, femmes }
   }, [filtered, patients, seances, debut, fin])
 
+  const donneesHistogramme = useMemo(() => {
+    if (periode === 'annee') {
+      const parMois = MOIS_LABEL.map(label => ({ label, count: 0 }))
+      filtered.forEach(r => {
+        const d = new Date(r.date)
+        if (!isNaN(d.getTime())) parMois[d.getMonth()].count++
+      })
+      return parMois
+    }
+    if (periode === 'jour') {
+      const parHeure = Array.from({ length: 24 }, (_, h) => ({ label: String(h).padStart(2,'0') + 'h', count: 0 }))
+      filtered.forEach(r => {
+        const h = parseInt((r.heureDebut || '0').split(':')[0], 10)
+        if (!isNaN(h) && h >= 0 && h < 24) parHeure[h].count++
+      })
+      return parHeure
+    }
+    const startD = new Date(debut)
+    const endD = new Date(fin)
+    const jours: { label: string; count: number; dateKey: string }[] = []
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+      jours.push({
+        label: d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+        count: 0,
+        dateKey: toKey(d),
+      })
+    }
+    filtered.forEach(r => {
+      const item = jours.find(j => j.dateKey === r.date)
+      if (item) item.count++
+    })
+    return jours
+  }, [filtered, periode, debut, fin])
+
+  const donneesRepartitionRdv = useMemo(() => [
+    { label: 'Effectués', value: stats.effectues, color: '#10b981' },
+    { label: 'Annulés',   value: stats.annules,   color: '#ef4444' },
+    { label: 'En attente', value: Math.max(0, stats.total - stats.effectues - stats.annules), color: '#f59e0b' },
+  ], [stats])
+
+  const donneesSexe = useMemo(() => [
+    { label: 'Hommes', value: stats.hommes, color: '#3b82f6' },
+    { label: 'Femmes', value: stats.femmes, color: '#ec4899' },
+  ], [stats])
+
   function navigate(dir: number) {
     const d = new Date(refDate)
     if (periode==='jour')    d.setDate(d.getDate()+dir)
@@ -125,17 +240,9 @@ export default function RapportPage() {
     setRefDate(d)
   }
 
-  const STATUT_STYLE: Record<string,string> = {
-    effectue:  'bg-emerald-100 text-emerald-700',
-    termine:   'bg-emerald-100 text-emerald-700',
-    planifie:  'bg-amber-100 text-amber-700',
-    annule:    'bg-red-100 text-red-500',
-  }
-
   return (
     <AppShell searchPlaceholder="Rechercher..." showSearch={false}>
 
-      {/* EN-TETE */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 print:mb-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -151,7 +258,6 @@ export default function RapportPage() {
         </button>
       </div>
 
-      {/* FILTRES PERIODE */}
       <div className="flex flex-wrap items-center gap-3 mb-6 print:hidden">
         <div className="flex rounded-xl border border-outline-variant overflow-hidden text-sm">
           {(['jour','semaine','mois','annee'] as Periode[]).map(p => (
@@ -175,7 +281,6 @@ export default function RapportPage() {
         </div>
       </div>
 
-      {/* TITRE PERIODE impression */}
       <div className="hidden print:block mb-4">
         <p className="text-sm text-on-surface-variant">Période : <strong className="capitalize">{label}</strong></p>
         <p className="text-xs text-on-surface-variant">Généré le {new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}</p>
@@ -183,14 +288,13 @@ export default function RapportPage() {
 
       <div className="space-y-6">
 
-        {/* CARTES STATISTIQUES */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { icon: 'event_note',   label: 'Total RDV',   value: stats.total,      color: 'text-primary',     bg: 'bg-teal-50' },
             { icon: 'check_circle', label: 'Effectués',   value: stats.effectues,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
             { icon: 'cancel',       label: 'Annulés',     value: stats.annules,    color: 'text-red-500',     bg: 'bg-red-50' },
-          { icon: 'man',          label: 'Hommes',      value: stats.hommes,     color: 'text-blue-600',    bg: 'bg-blue-50' },
-          { icon: 'woman',        label: 'Femmes',      value: stats.femmes,     color: 'text-pink-600',    bg: 'bg-pink-50' },
+            { icon: 'man',          label: 'Hommes',      value: stats.hommes,     color: 'text-blue-600',    bg: 'bg-blue-50' },
+            { icon: 'woman',        label: 'Femmes',      value: stats.femmes,     color: 'text-pink-600',    bg: 'bg-pink-50' },
           ].map(s => (
             <div key={s.label} className={'rounded-xl border border-outline-variant p-5 flex flex-col gap-2 ' + s.bg}>
               <div className="flex items-center gap-2">
@@ -202,6 +306,43 @@ export default function RapportPage() {
           ))}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-outline-variant p-5 bg-surface">
+            <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">bar_chart</span>
+              Rendez-vous {periode === 'annee' ? 'par mois' : periode === 'jour' ? 'par heure' : 'par jour'}
+            </p>
+            {donneesHistogramme.every(d => d.count === 0) ? (
+              <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
+            ) : (
+              <BarChart data={donneesHistogramme} />
+            )}
+          </div>
+
+          <div className="rounded-xl border border-outline-variant p-5 bg-surface">
+            <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">donut_large</span>
+              Répartition des rendez-vous
+            </p>
+            {stats.total === 0 ? (
+              <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
+            ) : (
+              <DonutChart data={donneesRepartitionRdv} />
+            )}
+          </div>
+
+          <div className="rounded-xl border border-outline-variant p-5 bg-surface lg:col-span-2">
+            <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">wc</span>
+              Répartition Hommes / Femmes (patients vus)
+            </p>
+            {(stats.hommes + stats.femmes) === 0 ? (
+              <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
+            ) : (
+              <DonutChart data={donneesSexe} />
+            )}
+          </div>
+        </div>
 
       </div>
     </AppShell>
