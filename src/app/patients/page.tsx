@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import { useLanguage } from '@/context/LanguageContext'
-import { getSeances, type Seance } from '@/lib/api'
 
 interface Patient {
   id: number; numeroDossier: string; nom: string; prenom: string
@@ -21,12 +20,8 @@ interface RendezVous {
 
 const API = process.env.NEXT_PUBLIC_API_URL
 
-// Utilisateur connecté — provisoire (pas encore d'auth backend).
-// Pour la démo : ouvrir la console navigateur et lancer
-// localStorage.setItem('nomUtilisateurConnecte', 'Dr Votre Nom')
-function nomUtilisateurConnecte() {
-  if (typeof window === 'undefined') return 'Kinésithérapeute'
-  return localStorage.getItem('nomUtilisateurConnecte') || 'Kinésithérapeute'
+function estExterne(p: Patient) {
+  return (p.numeroDossier || '').startsWith('CHU-')
 }
 
 export default function PatientsPage() {
@@ -35,7 +30,6 @@ export default function PatientsPage() {
   const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null)
   const [patients, setPatients] = useState<Patient[]>([])
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
-  const [seances, setSeances] = useState<Seance[]>([])
   const [search, setSearch] = useState('')
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [decalerRdv, setDecalerRdv] = useState<RendezVous | null>(null)
@@ -52,10 +46,6 @@ export default function PatientsPage() {
       .then(r => r.json())
       .then((data: RendezVous[]) => setRdvs(Array.isArray(data) ? data : []))
       .catch(() => setRdvs([]))
-
-    getSeances()
-      .then((data) => setSeances(Array.isArray(data) ? data : []))
-      .catch(() => setSeances([]))
   }, [])
 
   function rdvDuPatient(patientId: number): RendezVous | undefined {
@@ -64,12 +54,6 @@ export default function PatientsPage() {
       .sort((a, b) =>
         (a.date + (a.heureDebut || '')).localeCompare(b.date + (b.heureDebut || '')),
       )[0]
-  }
-
-  function derniereSeanceDuPatient(patientId: number): Seance | undefined {
-    return seances
-      .filter(s => s.patientId === patientId)
-      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
   }
 
   const filtered = useMemo(() => {
@@ -149,43 +133,51 @@ export default function PatientsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-3">
           {filtered.map(p => {
             const rdv = rdvDuPatient(p.id)
             return (
-              <div key={p.id}
-                className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 bg-emerald-500 shadow-sm">
-                    {p.prenom?.[0]}{p.nom?.[0]}
+              <div key={p.id} className="bg-surface rounded-xl border border-outline-variant shadow-sm p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
+                  <div className="min-w-0 md:w-52 md:flex-shrink-0">
+                    <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
+                    <p className="text-xs text-on-surface-variant">
+                      {p.dateNaissance} {p.sexe ? '- ' + (p.sexe === 'M' ? t('cal_homme') : t('cal_femme')) : ''}
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-emerald-800 truncate">{p.prenom} {p.nom}</p>
+
+                  <div className="md:flex-shrink-0">
+                    <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full ' + (estExterne(p) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
+                      {estExterne(p) ? 'Externe' : 'Interne'}
+                    </span>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 mt-4">
-                  <button
-                    onClick={() => setDetailsPatient(p)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-base">visibility</span>
-                    Voir
-                  </button>
+                  <div className="md:flex-shrink-0">
+                    <button onClick={() => setDetailsPatient(p)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors">
+                      Détails
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+                  </div>
 
-                  <div className="relative">
+                  <div className="md:flex-shrink-0 md:w-32">
+                    <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Dernière visite</p>
+                    <p className="text-xs text-on-surface-variant">{p.dateDerniereVisite || '-'}</p>
+                  </div>
+
+                  <div className="relative md:flex-shrink-0">
                     <button
                       onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
-                      title="Action"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <span className="material-symbols-outlined text-lg">more_vert</span>
+                      Action
+                      <span className="material-symbols-outlined text-sm">expand_more</span>
                     </button>
 
                     {menuOpen === p.id && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
-                        <div className="absolute right-0 z-50 mt-1 w-56 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
+                        <div className="absolute right-0 z-50 mt-1 w-52 bg-surface rounded-lg border border-outline-variant shadow-xl overflow-hidden text-left">
                           {rdv ? (
                             <>
                               <button onClick={() => commencer(rdv)}
@@ -248,63 +240,51 @@ export default function PatientsPage() {
         </div>
       )}
 
-      {detailsPatient && (() => {
-        const derniereSeance = derniereSeanceDuPatient(detailsPatient.id)
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
-              <div className="sticky top-0 bg-emerald-50 border-b border-emerald-200 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold bg-emerald-500 flex-shrink-0">
-                    {detailsPatient.prenom?.[0]}{detailsPatient.nom?.[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-emerald-800">{detailsPatient.prenom} {detailsPatient.nom}</h3>
-                    <p className="text-xs text-emerald-700/70">{detailsPatient.dateNaissance}</p>
-                  </div>
-                </div>
-                <button onClick={() => setDetailsPatient(null)} className="text-emerald-700 hover:text-emerald-900">
-                  <span className="material-symbols-outlined">close</span>
-                </button>
+      {detailsPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-500">description</span>
+                Détails de la prescription
+              </h3>
+              <button onClick={() => setDetailsPatient(null)} className="text-on-surface-variant hover:text-on-surface">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Urgence</p>
+                <p className="text-sm text-on-surface">{detailsPatient.urgence || 'Non renseigné'}</p>
               </div>
-
-              <div className="p-6">
-                <div className="bg-emerald-50/50 rounded-xl border border-emerald-100 p-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <ChampDetail label="Urgence" value={detailsPatient.urgence} />
-                    <ChampDetail label="Alertes" value={detailsPatient.alertes} />
-                    <ChampDetail label="Renseignements / Antécédents" value={detailsPatient.antecedents} />
-                    <ChampDetail label="Diagnostic" value={detailsPatient.diagnostic} />
-                    <ChampDetail label="Objectif prescripteur" value={detailsPatient.objectifs} />
-                    <ChampDetail label="Dr prescripteur" value={detailsPatient.nomMedecinPrescripteur} />
-                    <ChampDetail label="Bilan kinésithérapie" value={null} enAttente />
-                    <ChampDetail label="Traitement" value={derniereSeance?.traitement} />
-                    <ChampDetail label="Évolution / suivi" value={derniereSeance?.evolution} />
-                    <ChampDetail label="Conseil" value={derniereSeance?.conseil} />
-                    <ChampDetail label="Remarques" value={detailsPatient.remarques} full />
-                  </div>
-                </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Alertes</p>
+                <p className="text-sm text-on-surface">{detailsPatient.alertes || 'Aucune'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Renseignements</p>
+                <p className="text-sm text-on-surface">{detailsPatient.antecedents || 'Non renseigné'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Diagnostic</p>
+                <p className="text-sm text-on-surface">{detailsPatient.diagnostic || 'Non renseigné'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Objectifs</p>
+                <p className="text-sm text-on-surface">{detailsPatient.objectifs || 'Non renseigné'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Remarques</p>
+                <p className="text-sm text-on-surface">{detailsPatient.remarques || 'Aucune'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1">Médecin prescripteur</p>
+                <p className="text-sm text-on-surface">{detailsPatient.nomMedecinPrescripteur || 'Non renseigné'}</p>
               </div>
             </div>
           </div>
-        )
-      })()}
-    </AppShell>
-  )
-}
-
-function ChampDetail({ label, value, enAttente, full }: { label: string; value?: string | null; enAttente?: boolean; full?: boolean }) {
-  return (
-    <div className={full ? 'sm:col-span-2' : ''}>
-      <p className="text-[10px] font-bold text-emerald-700/70 uppercase tracking-wider mb-0.5">{label}</p>
-      {enAttente ? (
-        <p className="text-xs text-amber-600 italic flex items-center gap-1">
-          <span className="material-symbols-outlined text-[13px]">info</span>
-          Champ à venir — non encore disponible dans le système
-        </p>
-      ) : (
-        <p className="text-sm text-on-surface">{value || '—'}</p>
+        </div>
       )}
-    </div>
+    </AppShell>
   )
 }
