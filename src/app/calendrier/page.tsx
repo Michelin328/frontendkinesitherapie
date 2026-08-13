@@ -142,11 +142,11 @@ r.patient.nom : '-'
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
-        <TopBar searchPlaceholder={t('cal_rechercherPlaceholder')} />
+        <TopBar showSearch={false} />
         <div className="flex flex-1 overflow-hidden">
           <section className="flex-1 flex flex-col overflow-hidden">
 
-            <div className="flex-shrink-0 bg-surface shadow-sm border-b border-outline-variant px-6 py-3 flex justify-between items-center">
+            <div className="flex-shrink-0 bg-emerald-50 shadow-sm border-b border-outline-variant px-6 py-3 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors">
                   <span className="material-symbols-outlined text-sm">chevron_left</span>
@@ -186,7 +186,7 @@ r.patient.nom : '-'
                       <div className="flex-1 flex overflow-hidden">
                         <div className="w-16 flex-shrink-0 border-r border-outline-variant relative">
                           {HOURS.map((h, hi) => (
-                            <div key={h} className="absolute right-2 -translate-y-1/2"
+                            <div key={h} className="absolute right-2 pt-0.5"
                               style={{ top: (hi / HOURS.length) * 100 + '%' }}>
                               <span className="text-[10px] text-on-surface-variant font-semibold">{h}</span>
                             </div>
@@ -236,7 +236,7 @@ r.patient.nom : '-'
                     <div className="flex-1 flex overflow-hidden">
                       <div className="w-14 flex-shrink-0 border-r border-outline-variant relative">
                         {HOURS.map((h, hi) => (
-                          <div key={h} className="absolute right-1.5 -translate-y-1/2" style={{ top: (hi / HOURS.length) * 100 + '%' }}>
+                          <div key={h} className="absolute right-1.5 pt-0.5" style={{ top: (hi / HOURS.length) * 100 + '%' }}>
                             <span className="text-[9px] text-on-surface-variant font-semibold">{h}</span>
                           </div>
                         ))}
@@ -313,8 +313,8 @@ r.patient.nom : '-'
           </section>
 
           {drawerOpen && (
-            <aside className="w-96 border-l border-outline-variant bg-surface overflow-y-auto flex flex-col flex-shrink-0">
-              <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+            <aside className="w-72 border-l border-outline-variant bg-surface overflow-y-auto flex flex-col flex-shrink-0">
+              <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
                 <h3 className="font-semibold text-primary">{t('cal_profilPatient')}</h3>
                 <button onClick={() => { setDrawerOpen(false); setSelectedRdv(null); setSelectedPatient(null) }}
                   className="text-on-surface-variant hover:text-on-surface transition-colors">
@@ -329,16 +329,16 @@ r.patient.nom : '-'
                 </div>
               ) : selectedPatient ? (
                 <>
-                  <div className="p-8 text-center border-b border-outline-variant">
+                  <div className="p-4 text-center border-b border-outline-variant">
                     <div className="relative inline-block">
-                      <div className="w-24 h-24 rounded-full mx-auto border-4 border-surface shadow-lg bg-primary/10 flex items-center justify-center">
-                        <span className="text-3xl font-bold text-primary">
+                      <div className="w-14 h-14 rounded-full mx-auto border-4 border-surface shadow-lg bg-primary/10 flex items-center justify-center">
+                        <span className="text-lg font-bold text-primary">
                           {selectedPatient.prenom?.[0]}{selectedPatient.nom?.[0]}
                         </span>
                       </div>
-                      <span className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-surface rounded-full" />
+                      <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-surface rounded-full" />
                     </div>
-                    <a href={'/patients/' + selectedPatient.id + '?from=calendrier'} className="mt-4 font-bold text-primary text-lg hover:underline cursor-pointer block">{selectedPatient.prenom} {selectedPatient.nom}</a>
+                    <a href={'/patients/' + selectedPatient.id + '?from=calendrier'} className="mt-2 font-bold text-primary text-sm hover:underline cursor-pointer block">{selectedPatient.prenom} {selectedPatient.nom}</a>
                     <div className="flex items-center justify-center gap-2 mt-2">
                       <span className={'text-[11px] font-bold px-2 py-0.5 rounded-full ' + (STATUT_COLOR[selectedPatient.statut||''] || 'bg-surface-container-low text-on-surface-variant')}>
                         {(selectedPatient.statut||'').toUpperCase()}
@@ -362,29 +362,29 @@ r.patient.nom : '-'
                     </div>
                   )}
 
-                  <div className="px-6 py-5 space-y-5">
-                    <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-primary text-lg">medical_information</span>
-                        <h5 className="text-xs font-bold text-primary uppercase tracking-wider">{t('cal_resumeMedical')}</h5>
+                  <div className="px-4 py-3 space-y-3">
+                    <div className="bg-surface-container-low rounded-xl p-3 border border-outline-variant">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-primary text-base">medical_information</span>
+                        <h5 className="text-[11px] font-bold text-primary uppercase tracking-wider">{t('cal_resumeMedical')}</h5>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {[
                           { label: t('cal_diagnostic'),    value: selectedPatient.diagnostic || '-' },
                           { label: t('cal_dateAdmission'), value: selectedPatient.dateAdmission || '-' },
                           { label: t('cal_sexe'),          value: selectedPatient.sexe==='M'?t('cal_homme'): selectedPatient.sexe==='F'?t('cal_femme'): '-' },
                         ].map(item => (
                           <div key={item.label} className="flex justify-between">
-                            <span className="text-xs text-on-surface-variant">{item.label}</span>
-                            <span className="text-xs font-semibold text-primary">{item.value}</span>
+                            <span className="text-[11px] text-on-surface-variant">{item.label}</span>
+                            <span className="text-[11px] font-semibold text-primary">{item.value}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <button className="w-full btn-primary flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined text-sm">add_circle</span>
-                      {t('cal_nouveauCompteRendu')}
-                    </button>
+                    <a href={'/patients/' + selectedPatient.id} className="w-full btn-primary flex items-center justify-center gap-2 text-sm">
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      Voir
+                    </a>
                   </div>
                 </>
               ) : (
