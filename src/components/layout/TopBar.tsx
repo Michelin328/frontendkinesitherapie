@@ -163,6 +163,9 @@ export default function TopBar({
   function allerVersPrescription(n: NotificationKine) {
     marquerLue(n)
     setOpen(false)
+    try {
+      localStorage.setItem('demandeSecours_' + n.patientId, JSON.stringify(n))
+    } catch {}
     router.push('/prescriptions?patientId=' + encodeURIComponent(n.patientId))
   }
 

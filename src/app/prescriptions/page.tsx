@@ -123,7 +123,35 @@ function PrescriptionsContent() {
   useEffect(() => {
     const pid = searchParams.get('patientId')
     setPatientIdFiltre(pid)
-  }, [searchParams])
+    if (pid && !chargement) {
+      const dejaPresent = demandes.some((d) => d.patientId === pid)
+      if (!dejaPresent) {
+        try {
+          const brut = localStorage.getItem('demandeSecours_' + pid)
+          if (brut) {
+            const n = JSON.parse(brut)
+            const demandeSecours: DemandePrescription = {
+              id: n.demandeId || n.prescriptionId || pid,
+              patientId: n.patientId,
+              urgence: n.urgence || 'NORMAL',
+              diagnostic: n.diagnostic,
+              renseignements: n.renseignements,
+              alertes: n.alertes,
+              objectifs: n.objectifs,
+              remarques: n.remarques,
+              nomMedecinPrescripteur: n.nomMedecinPrescripteur,
+              statut: 'CREEE',
+              createdAt: n.createdAt || new Date().toISOString(),
+              patientNom: n.patientNom,
+              patientPrenom: n.patientPrenom,
+              patientDateNaissance: n.patientDateNaissance ?? null,
+            }
+            setDemandes((prev) => [...prev, demandeSecours])
+          }
+        } catch {}
+      }
+    }
+  }, [searchParams, demandes, chargement])
 
   function effacerFiltrePatient() {
     setPatientIdFiltre(null)
