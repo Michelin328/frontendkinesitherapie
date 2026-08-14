@@ -109,6 +109,57 @@ function DonutChart({ data }: { data: { label: string; value: number; color: str
   )
 }
 
+function LineChart({ data }: { data: { label: string; rdv: number; seance: number }[] }) {
+  const max = Math.max(1, ...data.map(d => Math.max(d.rdv, d.seance)))
+  const w = 600, h = 160, padding = 24
+  const step = data.length > 1 ? (w - padding * 2) / (data.length - 1) : 0
+  const toY = (v: number) => h - padding - (v / max) * (h - padding * 2)
+  const pointsRdv = data.map((d, i) => `${padding + i * step},${toY(d.rdv)}`).join(' ')
+  const pointsSeance = data.map((d, i) => `${padding + i * step},${toY(d.seance)}`).join(' ')
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ minWidth: data.length > 20 ? data.length * 14 : undefined }}>
+          <polyline points={pointsRdv} fill="none" stroke="#0d9488" strokeWidth="2" />
+          <polyline points={pointsSeance} fill="none" stroke="#f59e0b" strokeWidth="2" />
+          {data.map((d, i) => (
+            <circle key={'r' + i} cx={padding + i * step} cy={toY(d.rdv)} r="2.5" fill="#0d9488" />
+          ))}
+          {data.map((d, i) => (
+            <circle key={'s' + i} cx={padding + i * step} cy={toY(d.seance)} r="2.5" fill="#f59e0b" />
+          ))}
+        </svg>
+      </div>
+      <div className="flex items-center gap-4 mt-2 text-xs">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block" /> Rendez-vous</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Séances effectuées</span>
+      </div>
+    </div>
+  )
+}
+
+function interpreterHistogramme(data: { label: string; count: number }[]) {
+  const total = data.reduce((s, d) => s + d.count, 0)
+  if (total === 0) return "Aucun rendez-vous enregistré sur cette période."
+  const pic = data.reduce((a, b) => (b.count > a.count ? b : a), data[0])
+  return `Sur ${total} rendez-vous au total, le pic d'activité se situe sur "${pic.label}" avec ${pic.count} rendez-vous.`
+}
+
+function interpreterRepartition(data: { label: string; value: number }[]) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return "Aucune donnée disponible pour cette période."
+  const parts = data.filter(d => d.value > 0).map(d => `${d.label} ${Math.round((d.value / total) * 100)}%`)
+  return `Répartition : ${parts.join(', ')}.`
+}
+
+function interpreterCourbe(data: { rdv: number; seance: number }[]) {
+  const totalRdv = data.reduce((s, d) => s + d.rdv, 0)
+  const totalSeance = data.reduce((s, d) => s + d.seance, 0)
+  if (totalRdv === 0 && totalSeance === 0) return "Aucune donnée disponible pour cette période."
+  const taux = totalRdv > 0 ? Math.round((totalSeance / totalRdv) * 100) : 0
+  return `${totalSeance} séance(s) effectuée(s) pour ${totalRdv} rendez-vous programmé(s), soit un taux de réalisation d'environ ${taux}%.`
+}
+
 export default function RapportPage() {
   const { t } = useLanguage()
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
@@ -220,6 +271,46 @@ export default function RapportPage() {
     return jours
   }, [filtered, periode, debut, fin])
 
+  const donneesCourbe = useMemo(() => {
+    const seancesPeriode = seances.filter(s => s.date >= debut && s.date <= fin)
+    if (periode === 'annee') {
+      const parMoisRdv = MOIS_LABEL.map(() => 0)
+      const parMoisSeance = MOIS_LABEL.map(() => 0)
+      filtered.forEach(r => {
+        const d = new Date(r.date)
+        if (!isNaN(d.getTime())) parMoisRdv[d.getMonth()]++
+      })
+      seancesPeriode.forEach(s => {
+        const d = new Date(s.date)
+        if (!isNaN(d.getTime())) parMoisSeance[d.getMonth()]++
+      })
+      return MOIS_LABEL.map((label, i) => ({ label, rdv: parMoisRdv[i], seance: parMoisSeance[i] }))
+    }
+    if (periode === 'jour') {
+      const parHeureRdv = Array.from({ length: 24 }, () => 0)
+      filtered.forEach(r => {
+        const h = parseInt((r.heureDebut || '0').split(':')[0], 10)
+        if (!isNaN(h) && h >= 0 && h < 24) parHeureRdv[h]++
+      })
+      return Array.from({ length: 24 }, (_, h) => ({ label: String(h).padStart(2, '0') + 'h', rdv: parHeureRdv[h], seance: 0 }))
+    }
+    const startD = new Date(debut)
+    const endD = new Date(fin)
+    const jours: { label: string; rdv: number; seance: number; dateKey: string }[] = []
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+      jours.push({ label: d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }), rdv: 0, seance: 0, dateKey: toKey(d) })
+    }
+    filtered.forEach(r => {
+      const item = jours.find(j => j.dateKey === r.date)
+      if (item) item.rdv++
+    })
+    seancesPeriode.forEach(s => {
+      const item = jours.find(j => j.dateKey === s.date)
+      if (item) item.seance++
+    })
+    return jours
+  }, [filtered, seances, periode, debut, fin])
+
   const donneesRepartitionRdv = useMemo(() => [
     { label: 'Effectués', value: stats.effectues, color: '#10b981' },
     { label: 'Annulés',   value: stats.annules,   color: '#ef4444' },
@@ -315,7 +406,25 @@ export default function RapportPage() {
             {donneesHistogramme.every(d => d.count === 0) ? (
               <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
             ) : (
-              <BarChart data={donneesHistogramme} />
+              <>
+                <BarChart data={donneesHistogramme} />
+                <p className="text-xs text-on-surface-variant mt-3 italic">{interpreterHistogramme(donneesHistogramme)}</p>
+              </>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-outline-variant p-5 bg-surface lg:col-span-2">
+            <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">show_chart</span>
+              Évolution rendez-vous / séances effectuées
+            </p>
+            {donneesCourbe.every(d => d.rdv === 0 && d.seance === 0) ? (
+              <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
+            ) : (
+              <>
+                <LineChart data={donneesCourbe} />
+                <p className="text-xs text-on-surface-variant mt-3 italic">{interpreterCourbe(donneesCourbe)}</p>
+              </>
             )}
           </div>
 
@@ -327,7 +436,10 @@ export default function RapportPage() {
             {stats.total === 0 ? (
               <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
             ) : (
-              <DonutChart data={donneesRepartitionRdv} />
+              <>
+                <DonutChart data={donneesRepartitionRdv} />
+                <p className="text-xs text-on-surface-variant mt-3 italic">{interpreterRepartition(donneesRepartitionRdv)}</p>
+              </>
             )}
           </div>
 
@@ -339,7 +451,10 @@ export default function RapportPage() {
             {(stats.hommes + stats.femmes) === 0 ? (
               <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
             ) : (
-              <DonutChart data={donneesSexe} />
+              <>
+                <DonutChart data={donneesSexe} />
+                <p className="text-xs text-on-surface-variant mt-3 italic">{interpreterRepartition(donneesSexe)}</p>
+              </>
             )}
           </div>
         </div>
