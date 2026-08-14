@@ -121,6 +121,43 @@ function PrescriptionsContent() {
   }, [])
 
   useEffect(() => {
+    if (chargement) return
+    try {
+      const cles = Object.keys(localStorage).filter((k) => k.startsWith('demandeSecours_'))
+      const aAjouter: DemandePrescription[] = []
+      cles.forEach((cle) => {
+        const pid = cle.replace('demandeSecours_', '')
+        const dejaPresent = demandes.some((d) => d.patientId === pid)
+        if (!dejaPresent) {
+          const brut = localStorage.getItem(cle)
+          if (brut) {
+            const n = JSON.parse(brut)
+            aAjouter.push({
+              id: n.demandeId || n.prescriptionId || pid,
+              patientId: n.patientId,
+              urgence: n.urgence || 'NORMAL',
+              diagnostic: n.diagnostic,
+              renseignements: n.renseignements,
+              alertes: n.alertes,
+              objectifs: n.objectifs,
+              remarques: n.remarques,
+              nomMedecinPrescripteur: n.nomMedecinPrescripteur,
+              statut: 'CREEE',
+              createdAt: n.createdAt || new Date().toISOString(),
+              patientNom: n.patientNom,
+              patientPrenom: n.patientPrenom,
+              patientDateNaissance: n.patientDateNaissance ?? null,
+            })
+          }
+        }
+      })
+      if (aAjouter.length > 0) {
+        setDemandes((prev) => [...prev, ...aAjouter])
+      }
+    } catch {}
+  }, [chargement])
+
+  useEffect(() => {
     const pid = searchParams.get('patientId')
     setPatientIdFiltre(pid)
     if (pid && !chargement) {
