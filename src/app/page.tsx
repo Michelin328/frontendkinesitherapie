@@ -138,7 +138,7 @@ export default function DashboardPage() {
       {/* CARTES STATISTIQUES AUTOMATIQUES */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {/* Patients (3 niveaux) */}
-        <div className="bg-red-50 rounded-xl border-[3px] border-[#1e3a5f] shadow-sm p-5">
+        <div className="bg-red-50 rounded-xl border-[3px] border-purple-800 shadow-sm p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-black">Répartitions de patients</p>
             <span className="text-lg font-extrabold text-black tabular-nums">
@@ -160,7 +160,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Consultation interne */}
-        <div className="bg-teal-50 rounded-xl border-[3px] border-[#1e3a5f] shadow-sm p-5">
+        <div className="bg-teal-50 rounded-xl border-[3px] border-green-600 shadow-sm p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-teal-700">
               Consultation interne
@@ -175,7 +175,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Consultation externe */}
-        <div className="bg-indigo-50 rounded-xl border-[3px] border-[#1e3a5f] shadow-sm p-5">
+        <div className="bg-indigo-50 rounded-xl border-[3px] border-indigo-700 shadow-sm p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-indigo-700">
               Consultation externe
@@ -191,7 +191,7 @@ export default function DashboardPage() {
       </div>
 
       {/* RDV DU JOUR (données réelles) */}
-      <div className="bg-surface rounded-xl border-[3px] border-[#1e3a5f] shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border-[3px] border-green-600 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
           <div className="flex items-center gap-2">
             <h4 className="font-title-sm text-on-surface">{t('dash_rdvDuJour')}</h4>
@@ -216,10 +216,10 @@ export default function DashboardPage() {
               <Link
                 key={rdv.id}
                 href={'/patients/' + rdv.patientId + '?from=dashboard'}
-                className="px-6 py-5 flex items-center gap-4 hover:bg-surface-container-low transition-colors"
+                className="px-6 py-5 flex items-center gap-4 bg-green-600/30 hover:bg-green-600/40 transition-colors"
               >
                 <div className="text-center min-w-[60px]">
-                  <p className="text-xs font-bold tracking-widest uppercase text-primary">
+                  <p className="text-xs font-bold tracking-widest uppercase text-blue-700">
                     {(rdv.heureDebut || '').slice(0, 5)}
                   </p>
                 </div>

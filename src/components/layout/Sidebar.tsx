@@ -44,7 +44,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {open && (
         <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
-      <aside className={`fixed left-0 top-0 h-full w-64 border-r border-[#16283f] bg-[#1e3a5f] shadow-sm flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+      <aside className={`fixed left-0 top-0 h-full w-64 border-r border-[#2a5a8f] bg-gradient-to-b from-[#3273b0] to-[#2a5a8f] shadow-sm flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
           <span className="material-symbols-outlined text-white text-xl">clinical_notes</span>
@@ -65,7 +65,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-white text-sky-700 font-semibold shadow-sm' : 'text-white hover:bg-white/15'}`}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out ${isActive ? 'bg-white text-[#2a5a8f] font-semibold shadow-md scale-[1.02] border-l-4 border-white' : 'text-white/90 hover:bg-white/15 hover:pl-5 hover:shadow-sm border-l-4 border-transparent'}`}
             >
               <span className="material-symbols-outlined text-xl">{item.icon}</span>
               <span>{item.label}</span>
