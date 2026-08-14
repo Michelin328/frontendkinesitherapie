@@ -398,20 +398,6 @@ export default function RapportPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-outline-variant p-5 bg-surface">
-            <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-base text-primary">bar_chart</span>
-              Rendez-vous {periode === 'annee' ? 'par mois' : periode === 'jour' ? 'par heure' : 'par jour'}
-            </p>
-            {donneesHistogramme.every(d => d.count === 0) ? (
-              <p className="text-sm text-on-surface-variant py-8 text-center">Aucune donnée pour cette période.</p>
-            ) : (
-              <>
-                <BarChart data={donneesHistogramme} />
-                <p className="text-xs text-on-surface-variant mt-3 italic">{interpreterHistogramme(donneesHistogramme)}</p>
-              </>
-            )}
-          </div>
 
           <div className="rounded-xl border border-outline-variant p-5 bg-surface lg:col-span-2">
             <p className="text-sm font-bold text-on-surface mb-4 flex items-center gap-2">
