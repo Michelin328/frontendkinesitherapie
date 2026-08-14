@@ -161,6 +161,10 @@ export default function TopBar({
   }
 
   function allerVersPrescription(n: NotificationKine) {
+    if (n.lue) {
+      setOpen(false)
+      return
+    }
     marquerLue(n)
     setOpen(false)
     try {
