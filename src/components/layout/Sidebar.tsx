@@ -44,7 +44,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {open && (
         <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
-      <aside className={`fixed left-0 top-0 h-full w-64 border-r border-sky-300 bg-sky-500 shadow-sm flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+      <aside className={`fixed left-0 top-0 h-full w-64 border-r border-[#16283f] bg-[#1e3a5f] shadow-sm flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
           <span className="material-symbols-outlined text-white text-xl">clinical_notes</span>

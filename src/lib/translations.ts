@@ -6,7 +6,7 @@ export const TRANSLATIONS = {
     sidebar_tableauDeBord: 'Tableau de bord',
     sidebar_preinscription: 'Prescription',
     sidebar_patients: 'Fil du travail',
-    sidebar_calendrier: 'Calendrier du rendez-vous',
+    sidebar_calendrier: 'Calendrier du RDV',
     sidebar_archives: 'Archives',
     sidebar_rapport: 'Rapports',
     sidebar_parametres: 'Parametres',
@@ -19,7 +19,7 @@ export const TRANSLATIONS = {
 
     // Dashboard
     dash_bonjour: 'Bonjour, Dr. Vance',
-    dash_apercu: 'Voici l apercu de votre activité pour aujourd hui.',
+    dash_apercu: "Voici l'aperçu de votre activité pour aujourd'hui.",
     dash_rdvDuJour: 'Rendez-vous du jour',
     dash_voirTout: 'Voir tout',
     dash_repartitionTherapies: 'Repartition des Therapies',
