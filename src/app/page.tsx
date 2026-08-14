@@ -99,9 +99,9 @@ export default function DashboardPage() {
   }, [rdvs, demandes])
 
   return (
-    <AppShell searchPlaceholder="Rechercher un patient, un dossier..." showSearch>
+    <AppShell showSearch={false}>
       {/* EN-TETE */}
-      <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-4xl font-extrabold text-on-surface tracking-tight">
             {'Bonjour, Kiné ' + nomUtilisateur + ' \u{1F60A}'}
@@ -136,9 +136,9 @@ export default function DashboardPage() {
       </div>
 
       {/* CARTES STATISTIQUES AUTOMATIQUES */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         {/* Patients (3 niveaux) */}
-        <div className="bg-red-50 rounded-xl border-[3px] border-purple-800 shadow-sm p-5">
+        <div className="bg-sky-50 rounded-xl border-[3px] border-sky-600 shadow-sm p-5">
           <div className="flex items-center justify-between">
             <p className="text-lg font-bold text-black">Répartitions de patients</p>
             <span className="text-lg font-extrabold text-black tabular-nums">
@@ -190,8 +190,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* BARRE DE RECHERCHE */}
+      <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2.5 rounded-full w-full max-w-md mb-4 border border-outline-variant">
+        <span className="material-symbols-outlined text-on-surface-variant text-base">search</span>
+        <input
+          type="text"
+          placeholder="Rechercher un patient, un dossier..."
+          className="bg-transparent border-none focus:outline-none focus:ring-0 text-sm w-full text-on-surface placeholder-on-surface-variant"
+        />
+      </div>
+
       {/* RDV DU JOUR (données réelles) */}
-      <div className="bg-surface rounded-xl border-[3px] border-green-600 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl border-[3px] border-outline-variant shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
           <div className="flex items-center gap-2">
             <h4 className="font-title-sm text-on-surface">{t('dash_rdvDuJour')}</h4>
@@ -211,15 +221,15 @@ export default function DashboardPage() {
             Aucun rendez-vous aujourd&apos;hui.
           </div>
         ) : (
-          <div className="divide-y divide-outline-variant">
+          <div className="divide-y divide-outline-variant max-h-[42vh] overflow-y-auto">
             {stats.liste.map((rdv) => (
               <Link
                 key={rdv.id}
                 href={'/patients/' + rdv.patientId + '?from=dashboard'}
-                className="px-6 py-5 flex items-center gap-4 bg-green-600/30 hover:bg-green-600/40 transition-colors"
+                className={'px-6 py-4 flex items-center gap-4 border-l-4 transition-colors hover:bg-surface-container-low ' + (estExterne(rdv) ? 'border-l-indigo-400' : 'border-l-teal-400')}
               >
                 <div className="text-center min-w-[60px]">
-                  <p className="text-xs font-bold tracking-widest uppercase text-blue-700">
+                  <p className="text-xs font-bold tracking-widest uppercase text-primary">
                     {(rdv.heureDebut || '').slice(0, 5)}
                   </p>
                 </div>

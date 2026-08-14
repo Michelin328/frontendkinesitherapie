@@ -67,8 +67,8 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               onClick={onClose}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out ${isActive ? 'bg-white text-[#2a5a8f] font-semibold shadow-md scale-[1.02] border-l-4 border-white' : 'text-white/90 hover:bg-white/15 hover:pl-5 hover:shadow-sm border-l-4 border-transparent'}`}
             >
-              <span className="material-symbols-outlined text-xl">{item.icon}</span>
-              <span>{item.label}</span>
+              <span className={`material-symbols-outlined text-xl w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-[#2a5a8f]/10' : 'bg-white/10'}`}>{item.icon}</span>
+              <span className="tracking-wide">{item.label}</span>
             </Link>
           )
         })}
