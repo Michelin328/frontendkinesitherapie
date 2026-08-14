@@ -167,27 +167,31 @@ function PrescriptionsContent() {
   const filtrees = useMemo(() => {
     let liste = demandes.filter((d) => d.statut === 'CREEE' && !planifiees.has(d.id))
 
-    if (patientIdFiltre) {
-      liste = liste.filter((d) => d.patientId === patientIdFiltre)
-    } else {
-      if (filtreUrgence !== 'TOUS') {
-        liste = liste.filter((d) => d.urgence === filtreUrgence)
-      }
-      const s = recherche.trim().toLowerCase()
-      if (s) {
-        liste = liste.filter((d) =>
-          `${d.patientPrenom ?? ''} ${d.patientNom ?? ''}`.toLowerCase().includes(s) ||
-          (d.diagnostic ?? '').toLowerCase().includes(s) ||
-          libelleService(d.serviceIdSource).toLowerCase().includes(s),
-        )
-      }
+    if (filtreUrgence !== 'TOUS') {
+      liste = liste.filter((d) => d.urgence === filtreUrgence)
+    }
+    const s = recherche.trim().toLowerCase()
+    if (s) {
+      liste = liste.filter((d) =>
+        `${d.patientPrenom ?? ''} ${d.patientNom ?? ''}`.toLowerCase().includes(s) ||
+        (d.diagnostic ?? '').toLowerCase().includes(s) ||
+        libelleService(d.serviceIdSource).toLowerCase().includes(s),
+      )
     }
 
-    return [...liste].sort((a, b) => {
+    const trie = [...liste].sort((a, b) => {
       const diff = rangUrgence(a.urgence) - rangUrgence(b.urgence)
       if (diff !== 0) return diff
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
+    if (patientIdFiltre) {
+      const idx = trie.findIndex((d) => d.patientId === patientIdFiltre)
+      if (idx > 0) {
+        const [cible] = trie.splice(idx, 1)
+        trie.unshift(cible)
+      }
+    }
+    return trie
   }, [demandes, filtreUrgence, recherche, planifiees, patientIdFiltre])
 
   function ouvrirModale(d: DemandePrescription) {
@@ -264,21 +268,7 @@ function PrescriptionsContent() {
         </div>
       </div>
 
-      {patientIdFiltre && (
-        <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-lg bg-primary/10 border border-primary/30">
-          <p className="text-sm text-on-surface">
-            <span className="material-symbols-outlined text-sm align-middle mr-1">filter_alt</span>
-            Filtré sur <strong>{patientFiltreNom || 'ce patient'}</strong>
-          </p>
-          <button
-            onClick={effacerFiltrePatient}
-            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-          >
-            Voir tous les patients
-            <span className="material-symbols-outlined text-sm">close</span>
-          </button>
-        </div>
-      )}
+
 
       {!patientIdFiltre && (
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
