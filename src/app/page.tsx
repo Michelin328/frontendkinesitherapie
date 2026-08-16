@@ -55,6 +55,7 @@ export default function DashboardPage() {
   const [demandes, setDemandes] = useState<DemandeKine[]>([])
 
   const [nomUtilisateur, setNomUtilisateur] = useState('Utilisateur')
+  const [recherche, setRecherche] = useState('')
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
     setNow(new Date())
@@ -98,22 +99,22 @@ export default function DashboardPage() {
     }
   }, [rdvs, demandes])
 
-  return (
-    <AppShell showSearch={false}>
-      {/* EN-TETE */}
-      <div className="mb-3 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-4xl font-extrabold text-on-surface tracking-tight">
-            {'Bonjour, Kiné ' + nomUtilisateur + ' \u{1F60A}'}
-          </h2>
-          <p className="font-body-lg text-on-surface-variant mt-1">
-            {t('dash_apercu')}
-          </p>
-        </div>
+  const listeFiltree = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    if (!q) return stats.liste
+    return stats.liste.filter((rdv) => {
+      const nomComplet = ((rdv.patient?.prenom || '') + ' ' + (rdv.patient?.nom || '')).toLowerCase()
+      const motif = (rdv.motif || '').toLowerCase()
+      return nomComplet.includes(q) || motif.includes(q)
+    })
+  }, [stats.liste, recherche])
 
-        {/* DATE DU JOUR + HORLOGE (carte coloree) */}
-        <div className="text-right shrink-0 bg-sky-50 border border-sky-200 rounded-xl px-5 py-3">
-          <p className="text-sm text-sky-700 font-medium capitalize">
+  return (
+    <AppShell
+      showSearch={false}
+      topBarActions={
+        <div className="hidden sm:flex flex-col items-end leading-tight bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-200 rounded-xl px-4 py-1.5">
+          <p className="text-[11px] text-sky-700 font-semibold capitalize">
             {now
               ? now.toLocaleDateString('fr-FR', {
                   weekday: 'long',
@@ -123,7 +124,7 @@ export default function DashboardPage() {
                 })
               : ' '}
           </p>
-          <p className="text-2xl font-bold text-sky-700 font-manrope tabular-nums tracking-wide">
+          <p className="text-base font-bold text-sky-700 font-manrope tabular-nums tracking-wide">
             {now
               ? now.toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
@@ -133,10 +134,20 @@ export default function DashboardPage() {
               : ' '}
           </p>
         </div>
+      }
+    >
+      {/* EN-TETE */}
+      <div className="mb-2">
+        <h2 className="text-3xl font-extrabold text-on-surface tracking-tight">
+          {'Bonjour, Kiné ' + nomUtilisateur + ' \u{1F60A}'}
+        </h2>
+        <p className="font-body-lg text-on-surface-variant mt-0.5">
+          {t('dash_apercu')}
+        </p>
       </div>
 
       {/* CARTES STATISTIQUES AUTOMATIQUES */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
         {/* Patients (3 niveaux) */}
         <div className="bg-sky-50 rounded-xl border-[3px] border-sky-600 shadow-sm p-5">
           <div className="flex items-center justify-between">
@@ -195,6 +206,8 @@ export default function DashboardPage() {
         <span className="material-symbols-outlined text-on-surface-variant text-base">search</span>
         <input
           type="text"
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher un patient, un dossier..."
           className="bg-transparent border-none focus:outline-none focus:ring-0 text-sm w-full text-on-surface placeholder-on-surface-variant"
         />
@@ -216,35 +229,35 @@ export default function DashboardPage() {
             {t('dash_voirTout')}
           </Link>
         </div>
-        {stats.liste.length === 0 ? (
+        {listeFiltree.length === 0 ? (
           <div className="px-6 py-8 text-center text-on-surface-variant text-sm">
-            Aucun rendez-vous aujourd&apos;hui.
+            {recherche ? 'Aucun resultat pour cette recherche.' : 'Aucun rendez-vous aujourd\'hui.'}
           </div>
         ) : (
-          <div className="divide-y divide-outline-variant max-h-[42vh] overflow-y-auto">
-            {stats.liste.map((rdv) => (
+          <div className="divide-y divide-outline-variant max-h-[38vh] overflow-y-auto">
+            {listeFiltree.map((rdv) => (
               <Link
                 key={rdv.id}
                 href={'/patients/' + rdv.patientId + '?from=dashboard'}
-                className={'px-6 py-4 flex items-center gap-4 border-l-4 transition-colors hover:bg-surface-container-low ' + (estExterne(rdv) ? 'border-l-indigo-400' : 'border-l-teal-400')}
+                className={'px-6 py-2.5 flex items-center gap-4 border-l-4 transition-colors hover:bg-surface-container-low ' + (estExterne(rdv) ? 'border-l-indigo-400' : 'border-l-teal-400')}
               >
-                <div className="text-center min-w-[60px]">
+                <div className="text-center min-w-[50px]">
                   <p className="text-xs font-bold tracking-widest uppercase text-primary">
                     {(rdv.heureDebut || '').slice(0, 5)}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm bg-teal-100 text-teal-700">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs bg-teal-100 text-teal-700">
                   {(rdv.patient?.prenom?.[0] || '') +
                     (rdv.patient?.nom?.[0] || '')}
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-on-surface">
-                    {rdv.patient
-                      ? `${rdv.patient.prenom} ${rdv.patient.nom}`
-                      : `Patient #${rdv.patientId}`}
-                  </p>
-                  <p className="text-sm text-on-surface-variant">{rdv.motif}</p>
-                </div>
+                <p className="font-semibold text-on-surface flex-shrink-0">
+                  {rdv.patient
+                    ? `${rdv.patient.prenom} ${rdv.patient.nom}`
+                    : `Patient #${rdv.patientId}`}
+                </p>
+                <p className="text-sm text-on-surface-variant truncate flex-1">
+                  {rdv.motif}
+                </p>
                 <span className={'text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ' + (estExterne(rdv) ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700')}>
                   {estExterne(rdv) ? 'Externe' : 'Interne'}
                 </span>
@@ -253,6 +266,11 @@ export default function DashboardPage() {
                 </span>
               </Link>
             ))}
+          </div>
+        )}
+        {listeFiltree.length > 5 && (
+          <div className="px-6 py-2 bg-primary/5 border-t border-outline-variant text-center text-xs font-semibold text-primary">
+            + {listeFiltree.length - 5} autre{listeFiltree.length - 5 > 1 ? 's' : ''} rendez-vous — faites défiler la liste pour les voir
           </div>
         )}
       </div>

@@ -65,9 +65,9 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out ${isActive ? 'bg-white text-[#2a5a8f] font-semibold shadow-md scale-[1.02] border-l-4 border-white' : 'text-white/90 hover:bg-white/15 hover:pl-5 hover:shadow-sm border-l-4 border-transparent'}`}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-out border ${isActive ? 'bg-white text-[#2a5a8f] shadow-md scale-[1.02] border-white' : 'bg-white/10 text-white border-white/20 hover:bg-white/25 hover:border-white/40 hover:shadow-sm'}`}
             >
-              <span className={`material-symbols-outlined text-xl w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-[#2a5a8f]/10' : 'bg-white/10'}`}>{item.icon}</span>
+              <span className={`material-symbols-outlined text-xl w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-[#2a5a8f]/10' : 'bg-white/20'}`}>{item.icon}</span>
               <span className="tracking-wide">{item.label}</span>
             </Link>
           )
