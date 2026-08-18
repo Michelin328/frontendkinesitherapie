@@ -98,6 +98,7 @@ export default function TopBar({
   const [utilisateur, setUtilisateur] = useState(getUtilisateurConnecte())
   const [notifs, setNotifs] = useState<NotificationKine[]>([])
   const [open, setOpen] = useState(false)
+  const [now, setNow] = useState<Date | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const dernierNombre = useRef<number | null>(null)
 
@@ -112,7 +113,9 @@ export default function TopBar({
     setUtilisateur(getUtilisateurConnecte())
     fetchNotifs()
     const interval = setInterval(fetchNotifs, 30000)
-    return () => clearInterval(interval)
+    setNow(new Date())
+    const horloge = setInterval(() => setNow(new Date()), 1000)
+    return () => { clearInterval(interval); clearInterval(horloge) }
   }, [])
 
   useEffect(() => {
@@ -190,6 +193,32 @@ export default function TopBar({
       )}
       {!showSearch && <div />}
       <div className="flex items-center gap-3 md:gap-6">
+        <div className="hidden sm:flex items-center gap-3 bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-200 rounded-xl pl-3 pr-4 py-2">
+          <div className="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-white text-lg">calendar_month</span>
+          </div>
+          <div className="flex flex-col leading-tight">
+            <p className="text-[13px] text-sky-800 font-semibold capitalize">
+              {now
+                ? now.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : ' '}
+            </p>
+            <p className="text-lg font-bold text-sky-700 font-manrope tabular-nums tracking-wide">
+              {now
+                ? now.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })
+                : ' '}
+            </p>
+          </div>
+        </div>
         {actions}
 
         <button

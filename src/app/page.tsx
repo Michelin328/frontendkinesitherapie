@@ -56,12 +56,8 @@ export default function DashboardPage() {
 
   const [nomUtilisateur, setNomUtilisateur] = useState('Utilisateur')
   const [recherche, setRecherche] = useState('')
-  const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
-    setNow(new Date())
-    const id = setInterval(() => setNow(new Date()), 1000)
     setNomUtilisateur(getUtilisateurConnecte().displayName)
-    return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
@@ -110,32 +106,7 @@ export default function DashboardPage() {
   }, [stats.liste, recherche])
 
   return (
-    <AppShell
-      showSearch={false}
-      topBarActions={
-        <div className="hidden sm:flex flex-col items-end leading-tight bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-200 rounded-xl px-4 py-1.5">
-          <p className="text-[11px] text-sky-700 font-semibold capitalize">
-            {now
-              ? now.toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })
-              : ' '}
-          </p>
-          <p className="text-base font-bold text-sky-700 font-manrope tabular-nums tracking-wide">
-            {now
-              ? now.toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })
-              : ' '}
-          </p>
-        </div>
-      }
-    >
+    <AppShell showSearch={false}>
       {/* EN-TETE */}
       <div className="mb-2">
         <h2 className="text-3xl font-extrabold text-on-surface tracking-tight">
