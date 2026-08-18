@@ -137,7 +137,7 @@ export default function PatientsPage() {
           {filtered.map(p => {
             const rdv = rdvDuPatient(p.id)
             return (
-              <div key={p.id} className="bg-surface rounded-xl border border-outline-variant shadow-sm p-4">
+              <div key={p.id} className="bg-surface rounded-xl border-[4px] border-green-500/60 shadow-sm p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                   <div className="min-w-0 md:w-52 md:flex-shrink-0">
                     <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
@@ -188,7 +188,7 @@ export default function PatientsPage() {
                               <button onClick={() => ouvrirDecaler(rdv)}
                                 className="w-full px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low flex items-center gap-2">
                                 <span className="material-symbols-outlined text-base text-amber-600">event_repeat</span>
-                                Décaler le rendez-vous
+                                Décaler le RDV
                               </button>
                             </>
                           ) : (
@@ -212,7 +212,7 @@ export default function PatientsPage() {
               <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
                 <span className="material-symbols-outlined text-amber-600">event_repeat</span>
               </div>
-              <h3 className="text-lg font-bold text-on-surface">Décaler le rendez-vous</h3>
+              <h3 className="text-lg font-bold text-on-surface">Décaler le RDV</h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

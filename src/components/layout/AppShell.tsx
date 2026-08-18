@@ -124,8 +124,6 @@ function AppShellInner({
           showSearch={showSearch}
           actions={topBarActions}
           onMenuClick={() => setMenuOuvert(true)}
-          previewMode={previewMode}
-          onTogglePreview={cyclerPreview}
           onNouvelleNotification={() => setBanniereVisible(true)}
           onBellClick={() => setBanniereVisible(false)}
         />

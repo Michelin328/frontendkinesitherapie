@@ -33,8 +33,6 @@ interface TopBarProps {
   showSearch?: boolean
   actions?: React.ReactNode
   onMenuClick?: () => void
-  previewMode?: 'desktop' | 'tablet' | 'mobile'
-  onTogglePreview?: () => void
   onNouvelleNotification?: () => void
   onBellClick?: () => void
 }
@@ -84,13 +82,9 @@ export default function TopBar({
   showSearch = true,
   actions,
   onMenuClick,
-  previewMode = 'desktop',
-  onTogglePreview,
   onNouvelleNotification,
   onBellClick,
 }: TopBarProps) {
-  const previewIcon = previewMode === 'tablet' ? 'tablet_mac' : previewMode === 'mobile' ? 'smartphone' : 'devices'
-  const previewTitre = previewMode === 'tablet' ? 'Apercu tablette (clic: mobile)' : previewMode === 'mobile' ? 'Apercu mobile (clic: bureau)' : 'Apercu responsive (clic: tablette)'
   const { t } = useLanguage()
   const router = useRouter()
   const placeholder = searchPlaceholder || t('topbar_rechercher')
@@ -216,13 +210,6 @@ export default function TopBar({
         </div>
         {actions}
 
-        <button
-          onClick={onTogglePreview}
-          title={previewTitre}
-          className={'transition-colors ' + (previewMode !== 'desktop' ? 'text-primary' : 'text-on-surface-variant hover:text-primary')}
-        >
-          <span className="material-symbols-outlined">{previewIcon}</span>
-        </button>
 
         <div className="relative" ref={menuRef}>
           <button onClick={() => { setOpen((o) => !o); onBellClick?.() }} className="relative text-on-surface-variant hover:text-primary transition-colors">
@@ -235,7 +222,7 @@ export default function TopBar({
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-3 w-96 max-h-[460px] overflow-y-auto bg-surface rounded-xl border border-outline-variant shadow-xl z-50">
+            <div className="absolute right-0 mt-3 w-96 max-h-[460px] overflow-y-auto bg-surface rounded-xl border-[3px] border-blue-500/50 shadow-xl z-50">
               <div className="px-4 py-3 border-b border-outline-variant sticky top-0 bg-surface">
                 <p className="font-semibold text-on-surface text-sm mb-2">Notifications ({nonLues.length})</p>
               </div>
