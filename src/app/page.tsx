@@ -239,11 +239,6 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-        {listeFiltree.length > 5 && (
-          <div className="px-6 py-2 bg-primary/5 border-t border-outline-variant text-center text-xs font-semibold text-primary">
-            + {listeFiltree.length - 5} autre{listeFiltree.length - 5 > 1 ? 's' : ''} rendez-vous — faites défiler la liste pour les voir
-          </div>
-        )}
       </div>
     </AppShell>
   )

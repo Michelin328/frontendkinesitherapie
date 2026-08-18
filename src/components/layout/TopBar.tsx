@@ -197,24 +197,19 @@ export default function TopBar({
           <div className="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center flex-shrink-0">
             <span className="material-symbols-outlined text-white text-lg">calendar_month</span>
           </div>
-          <div className="flex flex-col leading-tight">
-            <p className="text-[13px] text-sky-800 font-semibold capitalize">
+          <div className="flex items-center">
+            <p className="text-sm font-semibold text-sky-800 capitalize whitespace-nowrap">
               {now
                 ? now.toLocaleDateString('fr-FR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
-                  })
-                : ' '}
-            </p>
-            <p className="text-lg font-bold text-sky-700 font-manrope tabular-nums tracking-wide">
-              {now
-                ? now.toLocaleTimeString('fr-FR', {
+                  }) + ' : ' + now.toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
-                  })
+                  }).split(':').join(' : ')
                 : ' '}
             </p>
           </div>
