@@ -44,7 +44,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
       {open && (
         <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
-      <aside className={`fixed left-0 top-0 h-full w-64 border-l-[6px] border-l-green-600 border-r-[6px] border-r-[#2a5a8f] bg-gradient-to-b from-[#3273b0] to-[#2a5a8f] shadow-lg flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-[#3273b0] to-[#2a5a8f] shadow-lg flex flex-col z-50 transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
           <span className="material-symbols-outlined text-white text-xl">clinical_notes</span>
@@ -65,7 +65,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-out border ${isActive ? 'bg-white text-[#2a5a8f] shadow-md scale-[1.02] border-white' : 'bg-white/10 text-white border-white/20 hover:bg-white/25 hover:border-white/40 hover:shadow-sm'}`}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-out border-2 ${isActive ? 'bg-white text-[#2a5a8f] shadow-md scale-[1.02] border-[#2a5a8f]' : 'bg-white/10 text-white border-[#2a5a8f] hover:bg-white/25 hover:shadow-sm'}`}
             >
               <span className={`material-symbols-outlined text-xl w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-[#2a5a8f]/10' : 'bg-white/20'}`}>{item.icon}</span>
               <span className="tracking-wide">{item.label}</span>
