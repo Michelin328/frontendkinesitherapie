@@ -137,7 +137,7 @@ export default function PatientsPage() {
           {filtered.map(p => {
             const rdv = rdvDuPatient(p.id)
             return (
-              <div key={p.id} className="bg-surface rounded-xl shadow-md hover:shadow-lg transition-shadow p-4">
+              <div key={p.id} className="bg-green-50/90 rounded-xl border border-green-500/60 shadow-sm p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                   <div className="min-w-0 md:w-52 md:flex-shrink-0">
                     <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
@@ -168,7 +168,7 @@ export default function PatientsPage() {
                   <div className="relative md:flex-shrink-0">
                     <button
                       onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Action
                       <span className="material-symbols-outlined text-sm">expand_more</span>
