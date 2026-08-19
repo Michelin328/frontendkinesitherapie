@@ -117,6 +117,21 @@ function PrescriptionsContent() {
   }
 
   useEffect(() => {
+    // TODO: patient mock temporaire - a retirer quand le service de notification est de nouveau actif
+    const patientMock: DemandePrescription = {
+      id: 'MOCK-001',
+      patientId: 'MOCK-PATIENT-001',
+      urgence: 'NORMAL',
+      diagnostic: 'Douleur lombaire chronique',
+      renseignements: 'Patient de test (donnee mock, service notification indisponible)',
+      statut: 'CREEE',
+      createdAt: new Date().toISOString(),
+      patientNom: 'Rakoto',
+      patientPrenom: 'Jean (Test)',
+      patientDateNaissance: '1990-01-01',
+      patientSexe: 'M',
+    }
+    setDemandes([patientMock])
     chargerDemandes()
   }, [])
 
