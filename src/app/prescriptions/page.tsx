@@ -360,7 +360,7 @@ function PrescriptionsContent() {
               d.patientPrenom && d.patientNom ? `${d.patientPrenom} ${d.patientNom}` : 'Patient non identifié'
 
             return (
-              <div key={d.id} className={'bg-surface rounded-xl border border-outline-variant shadow-sm border-l-4 p-4 ' + s.bord}>
+              <div key={d.id} className={'bg-green-50/90 rounded-xl border border-green-500/60 shadow-sm border-l-4 p-4 ' + s.bord}>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                   <div className="min-w-0 md:w-48 md:flex-shrink-0">
                     <p className="font-semibold text-on-surface">{nomComplet}</p>
@@ -401,7 +401,7 @@ function PrescriptionsContent() {
 
       {demandeActive && sActive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-green-500/60">
             <div className={'px-6 pt-5 pb-4 ' + sActive.entete}>
               <h3 className="text-lg font-bold text-on-surface">Planifier le rendez-vous</h3>
               <p className={'text-sm font-semibold mt-1 ' + sActive.accent}>{nomActif}</p>
