@@ -137,7 +137,7 @@ export default function PatientsPage() {
           {filtered.map(p => {
             const rdv = rdvDuPatient(p.id)
             return (
-              <div key={p.id} className="bg-green-50/90 rounded-xl border border-green-500/60 border-l-[1px] border-l-green-600/50 shadow-sm p-4">
+              <div key={p.id} className="bg-green-50/90 rounded-xl border border-green-500/60 border-l-[5px] border-l-green-600/50 shadow-sm p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                   <div className="min-w-0 md:w-52 md:flex-shrink-0">
                     <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
@@ -242,7 +242,7 @@ export default function PatientsPage() {
 
       {detailsPatient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-green-50/90 rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto">
+          <div className="bg-green-50/90 rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto border border-green-500">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-500">description</span>
