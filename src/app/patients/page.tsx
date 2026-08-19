@@ -137,7 +137,7 @@ export default function PatientsPage() {
           {filtered.map(p => {
             const rdv = rdvDuPatient(p.id)
             return (
-              <div key={p.id} className="bg-green-50/90 rounded-xl border border-green-500/60 shadow-sm p-4">
+              <div key={p.id} className="bg-green-50/90 rounded-xl border border-green-500/60 border-l-[10px] border-l-green-600 shadow-sm p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0">
                   <div className="min-w-0 md:w-52 md:flex-shrink-0">
                     <p className="font-semibold text-on-surface">{p.prenom} {p.nom}</p>
